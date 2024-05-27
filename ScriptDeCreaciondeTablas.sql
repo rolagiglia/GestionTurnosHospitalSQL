@@ -1,7 +1,7 @@
 /* Script de creacion de DB y tablas */
 -- se crean los schemas datos_paciente, comercial, servicio, personal
 
-/*eliminar todo -------------------------------------------------------
+/*eliminar todo
   
  drop table servicio.Reserva_de_turno_medico;
  drop table datos_paciente.Usuario;
@@ -23,12 +23,34 @@
  drop schema servicio;
  drop schema personal;
  drop database  Com5600G16;
- */ -------------------------------------------------------------------------
+ */
  
 create database Com5600G16;
 use Com5600G16;
 
 Create Schema datos_paciente;  -- SCHEMA
+
+
+create table datos_paciente.Paciente(
+	id_historia_clinica int primary key auto_increment,
+    nombre varchar(10),
+    apellido varchar(15),
+    apellido_materno varchar(15),
+    fecha_nacimiento date,
+    tipo_documento varchar(10),
+    nro_documento int NOT NULL UNIQUE,
+    sexo_biologico char(9),  -- masculino o femenino
+    genero varchar(10),
+    nacionalidad varchar(20),
+    dir_foto_perfil varchar(100),
+    mail varchar(50),
+    tel_fijo varchar(15),
+    tel_alternativo varchar(15),
+    tel_laboral varchar(15),
+    fecha_registro date default (current_date()),
+    fecha_actualizacion date,
+    usuario_actualizacion varchar(20)
+);
 
 CREATE table datos_paciente.Usuario (
 	id_usuario int PRIMARY KEY,  -- -- se deben generar a partir del dni ??
@@ -79,28 +101,6 @@ CREATE table datos_paciente.Cobertura(
     CONSTRAINT foreign key fk_paciente_cobertura (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
     
 );
-
-create table datos_paciente.Paciente(
-	id_historia_clinica int primary key auto_increment,
-    nombre varchar(10),
-    apellido varchar(15),
-    apellido_materno varchar(15),
-    fecha_nacimiento date,
-    tipo_documento varchar(10),
-    nro_documento int NOT NULL UNIQUE,
-    sexo_biologico char(9),  -- masculino o femenino
-    genero varchar(10),
-    nacionalidad varchar(20),
-    dir_foto_perfil varchar(100),
-    mail varchar(50),
-    tel_fijo varchar(15),
-    tel_alternativo varchar(15),
-    tel_laboral varchar(15),
-    fecha_registro date default (current_date()),
-    fecha_actualizacion date,
-    usuario_actualizacion varchar(20)
-);
-
 CREATE schema servicio;
 
 create table servicio.Estudio(
