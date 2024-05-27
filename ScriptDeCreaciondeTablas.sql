@@ -1,27 +1,43 @@
 /* Script de creacion de DB y tablas */
--- se crean los schemas datos_paciente, comercial, servicio, personal, establecimiento
+-- se crean los schemas datos_paciente, comercial, servicio, personal
 
-/*eliminar todo
- drop database  Com5600G16
- drop schema comercial
+/*eliminar todo -------------------------------------------------------
+  
+ drop table servicio.Reserva_de_turno_medico;
+ drop table datos_paciente.Usuario;
+ drop table datos_paciente.Domicilio;
+ drop table datos_paciente.Cobertura;
+ drop table datos_paciente.Paciente; 
+ drop table comercial.Plan;
+ drop table comercial.Prestador;
+ drop table servicio.Estudio;
+ drop table servicio.Estado_turno;
+ drop table servicio.Tipo_turno;
+ drop table servicio.Dias_por_sede;
+ drop table servicio.Sede;
+ drop table personal.Medico;
+ drop table personal.Especialidad;
+ 
+ drop schema comercial;
  drop schema datos_paciente;
- */
+ drop schema servicio;
+ drop schema personal;
+ drop database  Com5600G16;
+ */ -------------------------------------------------------------------------
  
 create database Com5600G16;
 use Com5600G16;
--- drop database  Com5600G16
 
 Create Schema datos_paciente;  -- SCHEMA
--- drop schema datos_paciente;
 
 CREATE table datos_paciente.Usuario (
 	id_usuario int PRIMARY KEY,  -- -- se deben generar a partir del dni ??
     contrasenia varchar(20), -- ------------------ checkear caract
-    fecha_de_creacion date default(current_date)  -- fecha actual default
-    
+    fecha_de_creacion date default(current_date),  -- fecha actual default
+    id_paciente int,
+    CONSTRAINT foreign key fk_paciente_usuario (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
 );
 
--- drop table datos_paciente.Usuario
 
 CREATE table datos_paciente.Domicilio(
 	id_domicilio int PRIMARY KEY auto_increment, 
@@ -32,19 +48,19 @@ CREATE table datos_paciente.Domicilio(
     cp smallint,
     pais varchar(15),
     provincia varchar(20),
-    localidad varchar(20)
+    localidad varchar(20),
+    id_paciente int,
+    CONSTRAINT foreign key fk_paciente_cobertura (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
 );
 
--- drop table datos_paciente.Domicilio
 CREATE SCHEMA comercial;
 
--- drop schema comercial
 CREATE table comercial.Prestador(
 	id_prestador int PRIMARY KEY auto_increment,
     nombre varchar (20),
     estado boolean DEFAULT 1            -- prestador activo
 );
-CREATE table comercial.Plan(                        -- el plan lo deternimanos con el numero de plan y el prestador
+CREATE table comercial.Plan(                        -- planes por prestador
 	id_plan int,                    
     id_prestador int,
     nombre varchar (20),
@@ -58,13 +74,12 @@ CREATE table datos_paciente.Cobertura(
     fecha_registro date,
     id_prestador int,
     id_plan int,
-    CONSTRAINT foreign key fk_prestador_cobertura (id_prestador, id_plan) REFERENCES comercial.Plan(id_prestador,id_plan)
+    id_paciente int,
+    CONSTRAINT foreign key fk_prestador_cobertura (id_prestador, id_plan) REFERENCES comercial.Plan(id_prestador,id_plan),
+    CONSTRAINT foreign key fk_paciente_cobertura (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
+    
 );
 
-/* drop table datos_paciente.Cobertura;
-drop table comercial.Plan;
-drop table comercial.Prestador;
-*/
 create table datos_paciente.Paciente(
 	id_historia_clinica int primary key auto_increment,
     nombre varchar(10),
@@ -86,25 +101,14 @@ create table datos_paciente.Paciente(
     usuario_actualizacion varchar(20)
 );
 
-
--- drop table datos_paciente.Paciente
-
---  ------------- schema turno ----------------------------
 CREATE schema servicio;
--- drop schema servicio;
 
---        ESTUDIOS ---------------------------------------------------------------------
-create table servicio.Estudio_autorizado(                -- agregue esta tabla para la autorizacion de estudios
-	id_autorizado int primary key auto_increment,
-    autorizado char(2) check (autorizado in ('si','no')),
-    porcentaje_autorizado int
-);
 create table servicio.Estudio(
 	id_estudio int primary key auto_increment,
     fecha_estudio date,
     nombre_estudio varchar(20),
-    id_autorizado int,
-    CONSTRAINT fk_estudio_autorizado foreign key (id_autorizado) references servicio.Estudio_autorizado(id_autorizado) 
+    autorizado varchar(10) default 'pendiente' check (lower(rtrim(ltrim(autorizado))) in ('si','no', 'pendiente')),
+    porcentaje_autorizado int
     );
 
 -- TURNOS MEDICOS ----------------------------------------------------------
@@ -134,8 +138,7 @@ create table personal.Medico(
     constraint fk_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad)
 );
 
-create schema establecimiento;
-create table establecimiento.Sede(
+create table servicio.Sede(
 	id_sede int primary key auto_increment,
     nombre_sede varchar(30),
     direccion_sede varchar(30)
@@ -147,7 +150,7 @@ create table servicio.Dias_por_sede(                 -- la voy a usar a la hora 
     dia varchar(10) check(lower(rtrim(ltrim(dia))) in('lunes','marte','miercoles','jueves','viernes','sabado')),
     horario_inicio time,
     constraint fk_dia_medico foreign key (id_medico) references personal.Medico(id_medico),
-    constraint fk_dia_sede foreign key (id_sede) references establecimiento.Sede(id_sede),
+    constraint fk_dia_sede foreign key (id_sede) references servicio.Sede(id_sede),
     constraint pk_dias_por_sede primary key (id_medico,id_sede)
 );
 
@@ -159,8 +162,10 @@ create table servicio.Reserva_de_turno_medico(  -- hay que verificar en la inser
     id_sede int,
     id_estado_turno int,
     id_tipo_turno int,
-    constraint fk_medico_turno foreign key (id_medico) references personal.Medico(id_medico),
-    constraint fk_turno_sede foreign key (id_sede) references establecimiento.Sede(id_sede),
+    id_paciente int,
+    constraint fk_turno_medico foreign key (id_medico) references personal.Medico(id_medico),
+    constraint fk_turno_sede foreign key (id_sede) references servicio.Sede(id_sede),
     constraint fk_turno_estado foreign key (id_estado_turno) references servicio.Estado_turno (id_estado),
-    constraint fk_turno_tipo foreign key (id_tipo_turno) references servicio.Tipo_turno(id_tipo_turno)
+    constraint fk_turno_tipo foreign key (id_tipo_turno) references servicio.Tipo_turno(id_tipo_turno),
+    constraint fk_turno_paciente foreign key (id_paciente) references datos_paciente.Paciente(id_historia_clinica)
 );
