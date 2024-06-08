@@ -37,15 +37,15 @@ go
 
 create table datos_paciente.Paciente(
 	id_historia_clinica int primary key identity(1,1),
-    nombre varchar(10),
-    apellido varchar(15),
-    apellido_materno varchar(15),
+    nombre varchar(30),
+    apellido varchar(35),
+    apellido_materno varchar(35),
     fecha_nacimiento date,
     tipo_documento varchar(10),
     nro_documento int NOT NULL UNIQUE,
     sexo_biologico varchar(10) check (lower(rtrim(ltrim(sexo_biologico))) in('masculino','femenino')),  -- masculino o femenino
     genero varchar(10),
-    nacionalidad varchar(20),
+    nacionalidad varchar(30),
     dir_foto_perfil varchar(100),
     mail varchar(50),
     tel_fijo varchar(15),
@@ -151,9 +151,10 @@ go
 
 create table personal.Medico(
 	id_medico int primary key identity(1,1),
-    nombre_medico varchar(10),
-    apellido_medico varchar(15),
+    nombre_medico varchar(30),
+    apellido_medico varchar(35),
     id_especialidad int,
+	nro_colegiado int UNIQUE,
     constraint fk_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad)
 );
 go
@@ -161,7 +162,9 @@ go
 create table servicio.Sede(
 	id_sede int primary key identity(1,1),
     nombre_sede varchar(30),
-    direccion_sede varchar(30)
+    direccion_sede varchar(30),
+	localidad_sede varchar (30),
+	provincia_sede varchar (30)
 );
 go
 
