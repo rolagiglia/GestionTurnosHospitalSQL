@@ -26,7 +26,7 @@
  drop database  Com5600G16;
  */
  
-create database Com5600G16;
+create database Com5600G16 collate SQL_Latin1_General_CP1_CI_AI;
 go
 
 use Com5600G16;
@@ -35,7 +35,7 @@ go
 Create Schema datos_paciente;  -- SCHEMA
 go
 
-create table datos_paciente.Paciente(
+create table datos_paciente.Paciente (
 	id_historia_clinica int primary key identity(1,1),
     nombre varchar(30),
     apellido varchar(35),
@@ -52,15 +52,16 @@ create table datos_paciente.Paciente(
     tel_alternativo varchar(15),
     tel_laboral varchar(15),
     fecha_registro date default (convert(date,getdate())),
-    fecha_actualizacion date,
-    usuario_actualizacion varchar(20)
+    fecha_actualizacion date default (convert(date,getdate())),
+    usuario_actualizacion varchar(20),
+	borrado bit default 0
 );
 go
 
 
 CREATE table datos_paciente.Usuario (
-	id_usuario int PRIMARY KEY,  -- -- se deben generar a partir del dni ??
-    contrasenia varchar(20), -- ------------------ checkear caract
+	id_usuario int PRIMARY KEY,  -- -- se deben generar a partir del dni
+    contrasenia varchar(20),
     fecha_de_creacion date default(convert(date,getdate())),  -- fecha actual default
     id_paciente int,
     CONSTRAINT fk_paciente_usuario foreign key  (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
@@ -88,7 +89,7 @@ go
 CREATE table comercial.Prestador(
 	id_prestador int PRIMARY KEY identity(1,1),
     nombre_prestador varchar (20),
-    estado char(3) DEFAULT 'ACT' check(estado in('ACT','INA'))            -- prestador activo
+    estado bit default 1            -- 1 prestador activo, 0 inactivo
 );
 go
 
