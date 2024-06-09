@@ -106,11 +106,11 @@ CREATE table datos_paciente.Cobertura(
 	id_cobertura int PRIMARY KEY identity(1,1),
     dir_imagen_credencial varchar(100), -- direccion de la imagen
     nro_socio int,      
-    fecha_registro date,
+    fecha_registro date default(convert(date,getdate())),
     id_prestador int,
     id_plan int,
     id_paciente int,
-    CONSTRAINT fk_prestador_cobertura foreign key  (id_prestador, id_plan) REFERENCES comercial.Plan_Prestador(id_plan,id_prestador),
+    CONSTRAINT fk_prestador_cobertura foreign key  ( id_plan,id_prestador) REFERENCES comercial.Plan_Prestador(id_plan,id_prestador),
     CONSTRAINT fk_paciente_cobertura foreign key  (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
     
 );
@@ -121,10 +121,13 @@ go
 
 create table servicio.Estudio(
 	id_estudio int primary key identity(1,1),
-    fecha_estudio date,
-    nombre_estudio varchar(20),
-    autorizado varchar(10) default 'pendiente' check (lower(rtrim(ltrim(autorizado))) in ('si','no', 'pendiente')),
-    porcentaje_autorizado int
+    fecha_estudio date not null,
+    nombre_estudio varchar(50) not null,
+    autorizado varchar(10) default 'pendiente',
+	id_paciente int,
+	imagen_resultado varchar(100)  ,  --direccion de la imagen
+	documento_resultado varchar(100),  -- direccion del documento
+	CONSTRAINT fk_estudio_paciente foreign key (id_paciente) references datos_paciente.Paciente(id_historia_clinica)
     );
 go
 -- TURNOS MEDICOS ----------------------------------------------------------
@@ -146,9 +149,11 @@ go
 
 create table personal.Especialidad(
 	id_especialidad int primary key identity(1,1),
-    nombre_especialidad varchar(20)
+    nombre_especialidad varchar(30) not null
 );
 go
+--drop table personal.Medico
+--drop table personal.Especialidad
 
 create table personal.Medico(
 	id_medico int primary key identity(1,1),
@@ -156,6 +161,7 @@ create table personal.Medico(
     apellido_medico varchar(35),
     id_especialidad int,
 	nro_colegiado int UNIQUE,
+	estado bit default 1, --borrado logico
     constraint fk_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad)
 );
 go
@@ -165,15 +171,16 @@ create table servicio.Sede(
     nombre_sede varchar(30),
     direccion_sede varchar(30),
 	localidad_sede varchar (30),
-	provincia_sede varchar (30)
+	provincia_sede varchar (30),
+	estado bit default 1   -- borrado logico por defecto sucursal activa 1
 );
 go
 
 create table servicio.Dias_por_sede(                 -- la voy a usar a la hora de validar los turnos
     id_medico int,
     id_sede int,
-    dia varchar(10) check(lower(rtrim(ltrim(dia))) in('lunes','marte','miercoles','jueves','viernes','sabado')),
-    horario_inicio time,
+    dia varchar(10) check(lower(rtrim(ltrim(dia))) in('lunes','martes','miercoles','jueves','viernes','sabado')),
+    horario_inicio time(0),
     constraint fk_dia_medico foreign key (id_medico) references personal.Medico(id_medico),
     constraint fk_dia_sede foreign key (id_sede) references servicio.Sede(id_sede),
     constraint pk_dias_por_sede primary key (id_medico,id_sede)
