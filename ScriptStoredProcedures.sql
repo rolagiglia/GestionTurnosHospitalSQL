@@ -85,34 +85,36 @@
 -----INSERTS----------------------
 
 
-
+use Com5600G16
+go 
 create or alter procedure insertarPaciente
 (
-	@Nombre varchar(10),
-	@Apellido varchar(15),
-	@Apellido_materno varchar(15),
+	@Nombre varchar(30),
+	@Apellido varchar(35),
+	@Apellido_materno varchar(35),
     @Fecha_nacimiento date,
     @Tipo_documento varchar(10),
     @NroDoc int,
     @Sexo_biologico varchar(10),
     @Genero varchar(10),
-    @Nacionalidad varchar(20),
+    @Nacionalidad varchar(30),
     @Dir_foto_perfil varchar(100),
     @Mail varchar(50),
     @Tel_fijo varchar(15),
     @Tel_alternativo varchar(15),
     @Tel_laboral varchar(15),
-    @Fecha_registro date,
-    @Fecha_actualizacion date,
-    @Usuario_actualizacion varchar(20)
+	@Usuario_actualizacion varchar(20)
+	
 )
 as
 begin
 	
-	if(@Sexo_biologico = 'masculino' collate SQL_Latin1_General_CP1_CI_AS or
-		@Sexo_biologico = 'femenino' collate SQL_Latin1_General_CP1_CI_AS)
-	begin
-		insert into datos_paciente.Paciente values 
+	if(@Sexo_biologico = 'masculino' collate SQL_Latin1_General_CP1_CI_AI or
+		@Sexo_biologico = 'femenino' collate SQL_Latin1_General_CP1_CI_AI)
+		insert into datos_paciente.Paciente (nombre, apellido, apellido_materno, fecha_nacimiento, tipo_documento,
+										nro_documento, sexo_biologico, genero, nacionalidad, dir_foto_perfil,
+										mail,tel_fijo,tel_alternativo,tel_laboral, usuario_actualizacion) 
+										values 
 		(
 			@Nombre,
 			@Apellido,
@@ -128,35 +130,37 @@ begin
 			@Tel_fijo,
 			@Tel_alternativo,
 			@Tel_laboral,
-			@Fecha_registro,
-			@Fecha_actualizacion,
 			@Usuario_actualizacion
 		)
-	end
+
 end
 go
 
 
-create or alter procedure insertarUsuario
+create or alter procedure insertarUsuario                    --recibe la dni del paciente y una contrasenia
 (
-	@IdUsuario int, -- se genera a partir del DNI
-	@contrasenia varchar(20), ---check caracteres
-    @Fecha_de_creacion date,
-    @Id_paciente int
+    
+    @dni_paciente int,
+	@contrasenia varchar(20)
 )
 as
 begin
 
-	if(@IdUsuario >= 10000000 and @Id_paciente in (	
-		select id_historia_clinica
+	if(@dni_paciente in (	
+		select nro_documento
 		from datos_paciente.Paciente
 	))
 	begin
-		insert into datos_paciente.Usuario values
+		declare @Id_paciente int
+	    set @Id_paciente = (select id_historia_clinica 
+							from datos_paciente.Paciente
+							where nro_documento = @dni_paciente)
+
+		insert into datos_paciente.Usuario (id_usuario,contrasenia,id_paciente)
+		values
 		(
-			@IdUsuario,
+			@dni_paciente,   --el sistema genera usuario con el nro de dni
 			@contrasenia,
-			@Fecha_de_creacion,
 			@Id_paciente
 		)
 	end
@@ -207,10 +211,11 @@ go
 create or alter procedure insertarPrestador
 ( 
     @nombre_prestador varchar (20),
-    @estado char(3)
+    @estado bit
 )
 as
 begin
+		if not exists(select @nombre_prestador from comercial.Prestador )   --evito insercion de prestadores repetidos
 		insert into comercial.Prestador values
 		(
 			@nombre_prestador,
@@ -219,7 +224,7 @@ begin
 end
 go
 
-create or alter	procedure insertarPlanPrestador
+create or alter	procedure comercial.insertarPlanPrestador
 (                
     @id_prestador int,
     @nombre_plan varchar (40)
@@ -227,8 +232,8 @@ create or alter	procedure insertarPlanPrestador
 )
 as
 begin
-	
-	if(@id_prestador in (select id_prestador from comercial.Prestador))
+	--verifico que exista el prestador y evito que se inserte un plan repetido
+	if(@id_prestador in (select id_prestador from comercial.Prestador)and @nombre_plan not in(select nombre_plan from comercial.Plan_Prestador where id_prestador=@id_prestador)) 
 	begin
 		insert into comercial.Plan_Prestador values (@id_prestador, @nombre_plan)
 	end
