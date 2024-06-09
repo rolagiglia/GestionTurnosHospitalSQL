@@ -1,9 +1,8 @@
 /* Script de testing */
 
--- nombre, apellido, apellido_materno, fecha_nacimiento, tipo_documento, nro_documento, sexo_biologico, genero, nacionalidad, dir_foto_perfil,
--- mail,tel_fijo,tel_alternativo,tel_laboral, usuario_actualizacion
+
 --inserta nuevo paciente
-execute  insertarPaciente 'juan', 'perez','materno','07/12/1987','dni',33333333,'masculino','hombre','argentino','','juan@juan.com', 1154678900,22222222,'' ,'medico'
+execute  insertarPaciente 'juan', 'perez','apellidomaterno','07/12/1987','dni',33333333,'masculino','hombre','argentino','','juan@juan.com', 1154678900,22222222,'' ,'medico'
 go
 
 select * from datos_paciente.Paciente
@@ -32,3 +31,32 @@ go
 exec comercial.insertarPlanPrestador 1, 'PLAN 800'  --no inserta planes repetidos
 go
 select * from comercial.Plan_Prestador
+
+exec datos_paciente.insertarCobertura 'dirimagen', 23456, 1, 1, 1 --dir_imagen_credencial,nro_socio,id_prestador,id_plan,id_paciente
+exec datos_paciente.insertarCobertura 'dirimagen', 23456, 1, 1, 1  -- no inserta mas de una cobertura por paciente
+go
+select * from datos_paciente.Cobertura
+go
+
+exec servicio.insertarEstudio 1,'24/02/2025', 'COLONOSCOPIA','pendiente','','' --id_paciente,fecha_estudio,nombre_estudio,autorizado,imagen_resultado,documento_resultado
+select * from servicio.Estudio
+
+exec personal.insertarEspecialidad 'OBSTETRICIA'
+exec personal.insertarEspecialidad 'OBSTETRICIA'
+exec personal.insertarEspecialidad 'TRAUMATO'
+select * from personal.Especialidad
+
+exec personal.insertarMedico 'alberto','gonzalez', 1, 43256--nombre_medico,apellido_medico,id_especialidad,nro_colegiado
+exec personal.insertarMedico '','', 3, 43256      -- no permite insertar dos veces la misma matricula de medico
+select * from personal.Medico
+
+exec servicio.insertarSede 'Trinidad de Ramos Mejia', 'juan de araoz', 'Ramos Mejia', 'Bs As'  --nombre_sede,direccion_sede, localidad_sede,provincia_sede
+exec servicio.insertarSede 'Trinidad de Ramos Mejia', 'juan de araoz', 'Ramos Mejia', 'Bs As'  --no inserta sedes duplicadas
+select * from servicio.Sede
+
+exec servicio.insertarDiasPorSede 1, 1, 'martes', '15:00' -- id_medico int, id_sede int, dia varchar(10) 'lunes','marte','miercoles','jueves','viernes','sabado', horario_inicio time,
+select * from servicio.Dias_por_sede
+
+
+
+

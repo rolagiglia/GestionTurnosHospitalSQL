@@ -87,7 +87,7 @@
 
 use Com5600G16
 go 
-create or alter procedure insertarPaciente
+create or alter procedure datos_paciente.insertarPaciente
 (
 	@Nombre varchar(30),
 	@Apellido varchar(35),
@@ -137,7 +137,7 @@ end
 go
 
 
-create or alter procedure insertarUsuario                    --recibe la dni del paciente y una contrasenia
+create or alter procedure datos_paciente.insertarUsuario                    --recibe la dni del paciente y una contrasenia
 (
     
     @dni_paciente int,
@@ -169,7 +169,7 @@ end
 go
 
 
-create or alter procedure insertarDomicilio
+create or alter procedure datos_paciente.insertarDomicilio
 ( 
     @calle varchar(10),
     @numero int,
@@ -208,7 +208,7 @@ end
 go
 
 
-create or alter procedure insertarPrestador
+create or alter procedure comercial.insertarPrestador
 ( 
     @nombre_prestador varchar (20),
     @estado bit
@@ -241,11 +241,10 @@ end
 go
 
 
-create or alter	procedure insertarCobertura
+create or alter	procedure datos_paciente.insertarCobertura
 (                
     @dir_imagen_credencial varchar(100), -- direccion de la imagen
     @nro_socio int,      
-    @fecha_registro date,
     @id_prestador int,
     @id_plan int,
     @id_paciente int
@@ -255,62 +254,67 @@ create or alter	procedure insertarCobertura
 as
 begin
 	
-	if(@id_prestador in (select id_prestador from comercial.Plan_Prestador) and
+	if(@id_prestador in (select id_prestador from comercial.Plan_Prestador) and     --verifica que exista el prestador, el plan y el paciente
 		@id_plan in (select id_plan from comercial.Plan_Prestador) and
-		@id_paciente in (select id_historia_clinica from datos_paciente.Paciente))
-	begin
-		insert into datos_paciente.Cobertura values 
-			(    
-				@dir_imagen_credencial,
-				@nro_socio,      
-				@fecha_registro,
-				@id_prestador,
-				@id_plan,
-				@id_paciente
-			)
-	end
+		@id_paciente in (select id_historia_clinica from datos_paciente.Paciente)and 
+		@id_paciente not in(select id_paciente from datos_paciente.Cobertura))       --no permite la insercion de mas de una cobertura para un paciente
+		begin
+			insert into datos_paciente.Cobertura(dir_imagen_credencial,nro_socio,id_prestador,id_plan,id_paciente) values 
+				(    
+					@dir_imagen_credencial,
+					@nro_socio,      
+					@id_prestador,
+					@id_plan,
+					@id_paciente
+				)
+		end
+
 end
 go
 
 
-create or alter	procedure insertarEstudio
-(                
+create or alter	procedure servicio.insertarEstudio
+(   
+	@id_paciente int,
     @fecha_estudio date,
-    @nombre_estudio varchar(20),
+    @nombre_estudio varchar(50),
     @autorizado varchar(10),
-    @porcentaje_autorizado int
+	@imagen_resultado varchar(100),
+	@documento_resultado varchar(100)
+
 )
 as
 begin
-	
+	if(@id_paciente in(select id_historia_clinica from datos_paciente.Paciente))
 
-	insert into servicio.Estudio values 
+	insert into servicio.Estudio(fecha_estudio,nombre_estudio,autorizado,id_paciente,imagen_resultado,documento_resultado) values 
 	(    
 		@fecha_estudio,
 		@nombre_estudio,
 		@autorizado,
-		@porcentaje_autorizado
+		@id_paciente,
+		@imagen_resultado,
+		@documento_resultado
 	)
 end
 go
 
 
-create or alter	procedure insertarEstadoTurno
+create or alter	procedure servicio.insertarEstadoTurno
 (                
     @nombre_estado varchar(10)
 )
 as
 begin
-	
-	insert into servicio.Estado_turno values 
-	(    
-		@nombre_estado
-	)
+		insert into servicio.Estado_turno values 
+		(    
+			@nombre_estado    --valores validos ('reservado','atendido', 'ausente', 'cancelado')
+		)
 end
 go
 
 
-create or alter	procedure insertarTipoTurno
+create or alter	procedure servicio.insertarTipoTurno
 (                
     @nombre_tipo_turno varchar(10)
 )
@@ -325,13 +329,13 @@ end
 go
 
 
-create or alter	procedure insertarEspecialidad
+create or alter	procedure personal.insertarEspecialidad
 (                
-    @nombre_especialidad varchar(20)
+    @nombre_especialidad varchar(30)
 )
 as
 begin
-	
+	if(@nombre_especialidad not in(select nombre_especialidad from personal.Especialidad))  --no inserta especialidades repetidas
 	insert into personal.Especialidad values 
 	(    
 		@nombre_especialidad
@@ -340,46 +344,54 @@ end
 go
 
 
-create or alter	procedure insertarMedico
+create or alter	procedure personal.insertarMedico  
 (                
     @nombre_medico varchar(10),
     @apellido_medico varchar(15),
-    @id_especialidad int
+    @id_especialidad int,
+	@nro_colegiado int
     --constraint fk_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad)
 )
 as
 begin
-
-	if(@id_especialidad in (select id_especialidad from personal.Especialidad))
+	--verifico que exista la especialidad y que el medico no este registrado 
+	if(@id_especialidad in (select id_especialidad from personal.Especialidad)and @nro_colegiado not in(select nro_colegiado from personal.Medico))
 	begin
-		insert into personal.Medico values 
+		insert into personal.Medico(nombre_medico,apellido_medico,id_especialidad,nro_colegiado) values 
 		(    
 			@nombre_medico,
 			@apellido_medico,
-			@id_especialidad
+			@id_especialidad,
+			@nro_colegiado
 		)
 	end
 end
 go
 
 
-create or alter	procedure insertarSede
+create or alter	procedure servicio.insertarSede
 (                
     @nombre_sede varchar(30),
-    @direccion_sede varchar(30)
+    @direccion_sede varchar(30),
+	@localidad_sede varchar (30),
+	@provincia_sede varchar (30)
 )
 as
 begin
-		insert into servicio.Sede values 
+		if(@nombre_sede not in(select nombre_sede from servicio.Sede))
+		insert into servicio.Sede(nombre_sede, direccion_sede, localidad_sede,provincia_sede) values 
 		(    
 		    @nombre_sede,
-			@direccion_sede
+			@direccion_sede,
+			@localidad_sede,
+			@provincia_sede
+
 		)
 end
 go
 
 
-create or alter	procedure insertarDiasPorSede
+create or alter	procedure servicio.insertarDiasPorSede
 (                
     @id_medico int,
     @id_sede int,
@@ -392,6 +404,7 @@ as
 begin
 	if(@id_medico in (select id_medico from personal.Medico) and
 		@id_sede in (select id_sede from servicio.Sede))
+		and (@id_medico not in(select id_medico from servicio.Dias_por_sede where id_sede=@id_sede and dia=lower(@dia)))
 
 	begin
 		insert into servicio.Dias_por_sede values 
@@ -407,7 +420,7 @@ go
 
 
 
-create or alter	procedure insertarReservaTurno
+create or alter	procedure servicio.insertarReservaTurno
 (                
     @fecha date,
     @hora time,
@@ -471,7 +484,7 @@ go
 -----MODIFIES----------------------
 
 
-create or alter procedure modificarFotoPaciente
+create or alter procedure datos_paciente.modificarFotoPaciente
 (
 	@id_historia_clinica int,
     @dir_foto_perfil varchar(100)
@@ -488,7 +501,7 @@ go
 
 
 
-create or alter procedure modificarTelPaciente
+create or alter procedure datos_paciente.modificarTelPaciente
 (
 	@id_historia_clinica int,
     @tel varchar(15),
@@ -522,7 +535,7 @@ go
 
 
 
-create or alter procedure modificarContraseniaUsuario
+create or alter procedure datos_paciente.modificarContraseniaUsuario
 (
 	@id_usuario int,
     @contrasenia varchar(15)
@@ -538,7 +551,7 @@ end
 go
 
 
-create or alter procedure modificarDomicilio
+create or alter procedure datos_paciente.modificarDomicilio
 (
     @calle varchar(10),
     @numero int,
@@ -568,7 +581,7 @@ end
 go
 
 
-create or alter procedure modificarPrestador
+create or alter procedure comercial.modificarPrestador
 (
 	@id_prestador int,
     @estado char(3)
@@ -588,7 +601,7 @@ go
 
 
 
-create or alter procedure modificarPlan
+create or alter procedure comercial.modificarPlan
 (
     @nombre_plan varchar (40),
 	@id_plan int
@@ -604,7 +617,7 @@ end
 go
 
 
-create or alter procedure modificarCobertura
+create or alter procedure comercial.modificarCobertura
 (   
 	@id_prestador int,
     @id_plan int,
@@ -624,7 +637,7 @@ end
 go
 
 
-create or alter procedure modificarEstudio
+create or alter procedure servicio.modificarEstudio
 (   
 	@id_estudio int,
     @autorizado varchar(10), --default 'pendiente' check (lower(rtrim(ltrim(autorizado))) in ('si','no', 'pendiente')),
@@ -646,7 +659,7 @@ end
 go
 
 
-create or alter procedure modificarEstadoTurno
+create or alter procedure servicio.modificarEstadoTurno
 (   
 	@id_estado int,
     @nombre_estado varchar(10) -- check(nombre_estado in ('reservado','atendido', 'ausente', 'cancelado'))
@@ -667,7 +680,7 @@ end
 go
 
 
-create or alter procedure modificarTipoTurno
+create or alter procedure servicio.modificarTipoTurno
 (   
 	@id_tipo_turno int,
     @nombre_tipo_turno varchar(10)-- check(nombre_tipo_turno in ('presencial', 'virtual'))
@@ -687,7 +700,7 @@ go
 
 
 
-create or alter procedure modificarEspecialidadMedico
+create or alter procedure personal.modificarEspecialidadMedico
 (   
 	@id_medico int,
     @id_especialidad int
@@ -707,7 +720,7 @@ go
 
 
 
-create or alter procedure modificarDireccionSede
+create or alter procedure servicio.modificarDireccionSede
 (   
 	@id_sede int,
     @direccion_sede varchar(30)
@@ -722,7 +735,7 @@ end
 go
 
 
-create or alter procedure modificarDiasSede
+create or alter procedure servicio.modificarDiasSede
 (   
     @id_medico int,
     @id_sede int,
@@ -755,7 +768,7 @@ end
 go
 
 
-create or alter procedure modificarReservaTipoTurno
+create or alter procedure servicio.modificarReservaTipoTurno
 (   
 	@id_turno int,
     @id_tipo_turno int
@@ -778,7 +791,7 @@ end
 go
 
 
-create or alter procedure modificarReservaFechaHoraTurno
+create or alter procedure servicio.modificarReservaFechaHoraTurno
 (   
 	@id_turno int,
     @fecha date,
@@ -800,7 +813,7 @@ end
 go
 
 
-create or alter procedure modificarReservaEstadoTurno
+create or alter procedure servicio.modificarReservaEstadoTurno
 (   
 	@id_turno int,
 	@id_estado_turno int
@@ -823,7 +836,7 @@ end
 go
 
 
-create or alter procedure modificarReservaMedicoSede
+create or alter procedure servicio.modificarReservaMedicoSede
 (   
 	@id_turno int,
 	@id_medico int,
