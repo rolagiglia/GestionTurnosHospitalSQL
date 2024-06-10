@@ -426,6 +426,7 @@ create or alter	procedure servicio.insertarReservaTurno
     @fecha date,
     @hora time,
     @id_medico int,
+	@id_especialidad int,
     @id_sede int,
     @id_estado_turno int,
     @id_tipo_turno int,
@@ -459,9 +460,10 @@ begin
 	end
 	
 	declare @hora_inicio time(0)
-	select @hora_inicio = (select horario_inicio from servicio.Dias_por_sede where id_medico=@id_medico and id_sede=@id_sede and dia=@dia)
+	select @hora_inicio = (select horario_inicio from servicio.Dias_por_sede d inner join personal.Medico m on d.id_medico=m.id_medico
+		where d.id_medico=@id_medico and id_sede=@id_sede and dia=@dia and m.id_especialidad= @id_especialidad)
 
-	if (@hora_inicio is not null and DATEDIFF(minute,@hora_inicio, @hora)%15=0)--verifico que el horario sea a 15 minutos y que  el medico atienda ese dia en esa sucursal
+	if (@hora_inicio is not null and DATEDIFF(minute,@hora_inicio, @hora)%15=0)--verifico que el horario sea a 15 minutos y que  el medico atienda ese dia en esa sucursal esa especialidad
 	begin 
 			if(@id_estado_turno in (select id_estado from servicio.Estado_turno) and						
 			@id_tipo_turno in (select id_tipo_turno from servicio.Tipo_turno) and
@@ -476,6 +478,7 @@ begin
 							@fecha,
 							@hora,
 							@id_medico,
+							@id_especialidad,
 							@id_sede,
 							@id_estado_turno,
 							@id_tipo_turno,
@@ -499,7 +502,8 @@ go
 create or alter procedure datos_paciente.modificarFotoPaciente
 (
 	@id_historia_clinica int,
-    @dir_foto_perfil varchar(100)
+    @dir_foto_perfil varchar(100),
+	@usuario_actualizacion varchar(30)
 )
 as
 begin
@@ -508,6 +512,13 @@ begin
 	set dir_foto_perfil = @dir_foto_perfil
 	where id_historia_clinica = @id_historia_clinica
 	
+	update datos_paciente.Paciente
+	set usuario_actualizacion = @usuario_actualizacion 
+	where id_historia_clinica = @id_historia_clinica
+
+	update datos_paciente.Paciente
+	set fecha_actualizacion = convert(date,getdate())
+	where id_historia_clinica = @id_historia_clinica
 end
 go
 

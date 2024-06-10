@@ -73,11 +73,12 @@ exec servicio.insertarEstadoTurno 'ausente' --id 2
 exec servicio.insertarEstadoTurno 'atendido'--id 3
 go
 
-exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,2,1 --fecha, hora, id_medico,id_sede, id_estado de turno,id_tipo_turno,id_paciente 
-go
-select * from servicio.Reserva_de_turno_medico
-go
+exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,1,2,1 --fecha, hora, id_medico,id_especialidad,id_sede, id_estado de turno,id_tipo_turno,id_paciente 
+go																
+exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,1,2,1 --no permite duplicados
+exec servicio.insertarReservaTurno '28/06/2024','08:40',1,5,1,1,2,1 --no permite turnos cada menos de 15 minutos
+
+exec datos_paciente.modificarFotoPaciente 1,'nuevadirecciondefoto','usuario_medico'  --modifica foto y registra usuario
 
 
 
-select * from servicio.Dias_por_sede
