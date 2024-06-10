@@ -54,7 +54,7 @@ create table datos_paciente.Paciente (
     fecha_registro date default (convert(date,getdate())),
     fecha_actualizacion date default (convert(date,getdate())),
     usuario_actualizacion varchar(20),
-	borrado bit default 0
+	borrado bit default 0  -- paciente borrado 1, activo 0
 );
 go
 
@@ -70,26 +70,25 @@ go
 
 CREATE table datos_paciente.Domicilio(
 	id_domicilio int PRIMARY KEY identity(1,1), 
-    calle varchar(10),
+    calle varchar(50),
     numero int,
     piso int,
     departamento char(1), -- puede ser letra o numero
     cp smallint,
-    pais varchar(15),
-    provincia varchar(20),
-    localidad varchar(20),
+    pais varchar(30),
+    provincia varchar(50),
+    localidad varchar(50),
     id_paciente int,
     CONSTRAINT fk_paciente_domicilio foreign key  (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
 );
 go
-
 CREATE SCHEMA comercial; 
 go
 
 CREATE table comercial.Prestador(
 	id_prestador int PRIMARY KEY identity(1,1),
     nombre_prestador varchar (20),
-    estado bit default 1            -- 1 prestador activo, 0 inactivo
+    borrado bit default 0           --borrado logico, en 0 indica plan activo
 );
 go
 
@@ -97,6 +96,7 @@ CREATE table comercial.Plan_Prestador(                        -- planes por pres
 	id_plan int identity(1,1),                    
     id_prestador int,
     nombre_plan varchar (40),
+	borrado bit default 0 --borrado logico, en 0 indica plan activo
     CONSTRAINT fk_prestador_plan foreign key (id_prestador) references comercial.Prestador(id_prestador),
     CONSTRAINT pk_plan primary key  (id_plan,id_prestador)
 );
@@ -127,6 +127,7 @@ create table servicio.Estudio(
 	id_paciente int,
 	imagen_resultado varchar(100)  ,  --direccion de la imagen
 	documento_resultado varchar(100),  -- direccion del documento
+	borrado bit default 0  --borrado logico en 1 estaria borrado
 	CONSTRAINT fk_estudio_paciente foreign key (id_paciente) references datos_paciente.Paciente(id_historia_clinica)
     );
 go
@@ -134,7 +135,7 @@ go
 
 create table servicio.Estado_turno(
 	id_estado int primary key identity(1,1),
-    nombre_estado varchar(10)  check(nombre_estado in ('disponible','reservado','atendido', 'ausente', 'cancelado'))
+    nombre_estado varchar(10)  check(nombre_estado in ('reservado','atendido', 'ausente', 'cancelado'))
 );
 go
 
@@ -161,7 +162,7 @@ create table personal.Medico(
     apellido_medico varchar(35),
     id_especialidad int,
 	nro_colegiado int UNIQUE,
-	estado bit default 1, --borrado logico
+	borrado bit default 0, --borrado logico
     constraint fk_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad)
 );
 go
@@ -172,7 +173,7 @@ create table servicio.Sede(
     direccion_sede varchar(30),
 	localidad_sede varchar (30),
 	provincia_sede varchar (30),
-	estado bit default 1   -- borrado logico por defecto sucursal activa 1
+	borrado bit default 0   -- borrado logico por defecto 0, borrado en 1
 );
 go
 
@@ -196,6 +197,7 @@ create table servicio.Reserva_de_turno_medico(  -- hay que verificar en la inser
     id_estado_turno int,
     id_tipo_turno int,
     id_paciente int,
+	borrado bit default 0, --borrado logico, en 1 borrado
     constraint fk_turno_medico foreign key (id_medico) references personal.Medico(id_medico),
 	constraint fk_turno_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad),
     constraint fk_turno_sede foreign key (id_sede) references servicio.Sede(id_sede),

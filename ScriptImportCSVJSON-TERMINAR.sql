@@ -2,8 +2,53 @@
 
 use Com5600G16
 go
+create schema importacion
+go
 
-create or alter procedure importarPacientes as
+CREATE or alter FUNCTION importacion.ExtraerUltimosNumeros(@cadena NVARCHAR(100))
+RETURNS NVARCHAR(100)
+AS
+BEGIN
+    DECLARE @pos INT = LEN(@cadena)
+    DECLARE @posUltimoNumero INT = -1
+    DECLARE @startPos INT
+    DECLARE @ultimosNumeros NVARCHAR(100) = ''
+
+    -- Bucle para encontrar la posiciÛn del ˙ltimo n˙mero de derecha a izquierda
+    WHILE @pos > 0
+    BEGIN
+        IF SUBSTRING(@cadena, @pos, 1) LIKE '[0-9]'
+        BEGIN
+            SET @posUltimoNumero = @pos
+            BREAK
+        END
+        SET @pos = @pos - 1
+    END
+
+    -- Si no se encontrÛ ning˙n n˙mero, devolver cadena vacÌa
+    IF @posUltimoNumero = -1
+        RETURN ''
+
+    -- Inicializar la posiciÛn de inicio con la posiciÛn del ˙ltimo n˙mero
+    SET @startPos = @posUltimoNumero
+
+    -- Bucle para encontrar la posiciÛn del inicio de los n˙meros consecutivos
+    WHILE @startPos > 0 AND SUBSTRING(@cadena, @startPos, 1) LIKE '[0-9]'
+    BEGIN
+        SET @startPos = @startPos - 1
+    END
+
+    -- Ajusta la posiciÛn inicial para que apunte al primer dÌgito del grupo
+    SET @startPos = @startPos + 1
+
+    -- Extraer los n˙meros
+    DECLARE @longitud INT = @posUltimoNumero - @startPos + 1
+    SET @ultimosNumeros = SUBSTRING(@cadena, @startPos, @longitud)
+
+    RETURN @ultimosNumeros
+END
+GO
+create or alter procedure importacion.importarPacientes as
 begin
 
 create table #PacientesTemporal (
@@ -189,26 +234,20 @@ create table #PacientesTemporal (
 		from #PacientesTemporal
 		where Nro_documento not in (select nro_documento from datos_paciente.Paciente)   --no inserta los duplicados, el resto si
 
---	Intente insertar los datos del domicilio en la tabla Domicilio, pero no pude lograr castear parte del varchar como direccion y la otra como numero
--- Una posible solucion seria guardar todo dentro de calle
 
---	insert into datos_paciente.Domicilio(calle,numero,localidad,provincia)
---		select  RTRIM(Calle_y_Nro,'1234567890'),CAST(LTRIM(Calle_y_Nro,'abcdefghijklmnopqrstuvwxyz·ÈÌÛ˙Ò
---										ABCDEFGHIJKLMNOPQRSTUVWXYZ¡…Õ”⁄—.∞ ') as int), localidad, Provincia
---		from #PacientesTemporal
-
-select * from datos_paciente.Paciente
+		insert into datos_paciente.Domicilio(calle, numero,localidad,provincia,id_paciente)      
+			select  REPLACE(rtrim(ltrim (Calle_y_Nro)),importacion.ExtraerUltimosNumeros(Calle_y_Nro),''),  
+					cast(importacion.ExtraerUltimosNumeros(Calle_y_Nro)as int),localidad,provincia,p.id_historia_clinica  --utilizo funcion para obtener el nro de calle
+			from #PacientesTemporal t join datos_paciente.Paciente p on p.nro_documento=t.Nro_documento
+			where p.id_historia_clinica not in(select id_paciente from datos_paciente.Domicilio)                      --no inserta duplicados
 
 	drop table #PacientesTemporal
 
 end
 go
 
-exec importarPacientes
-go
 
-
-create or alter procedure importarMedicos as
+create or alter procedure importacion.importarMedicos as
 begin
 
 create table #MedicosTemporal (
@@ -344,7 +383,7 @@ end
 go
 
 
-create or alter procedure importarSedes as
+create or alter procedure importacion.importarSedes as
 begin
 	
 	create table #SedesTemporal
@@ -489,19 +528,11 @@ begin
 	from #SedesTemporal
 	where sede not in(select nombre_sede from servicio.Sede)    --NO INSERTA DUPLICADOS
 
-
-
-
 end
 go
 
 
-exec importarSedes
-go
-
-
-
-create or alter procedure importarPrestador as
+create or alter procedure importacion.importarPrestador as
 begin
 	
 	create table #PrestadorTemporal
@@ -602,7 +633,7 @@ begin
 	insert into comercial.Prestador(nombre_prestador)
 		select prestador 
 		from #PrestadorTemporal
-		where prestador not in (select nombre_prestador from comercial.Prestador) ----------------------------------------------------- no inserte duplicados
+		where prestador not in (select nombre_prestador from comercial.Prestador) --- no inserte duplicados
 		group by prestador
 
 
@@ -617,41 +648,159 @@ end
 go
 
 
-exec importarPrestador
-go
 
 
-create or alter procedure importarEstudios as
+create or alter procedure importacion.importarEstudios as
 begin
 
-	create table #EstudiosTemp
+	create table #AutorizacionEstudiosTemp
 	(
-		id varchar(25),
-		area nvarchar(30),
-		estudio nvarchar(30),
-		prestador nvarchar(30),
-		plan_ nvarchar(30),
-		porcentaje int,
+		area nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		estudio nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		prestador nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		plan_ nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		[Porcentaje Cobertura] int,
 		costo decimal(10,2),
-		autorizacion bit
+		[Requiere autorizacion] bit
 	)
-
-	--drop table #EstudiosTemp
-
-	insert into #EstudiosTemp (area,estudio,prestador,plan_,porcentaje,costo,autorizacion)
-	select area,estudio,prestador,plan_,porcentaje,costo,autorizacion
-	from openrowset (bulk 'D:\Primer Cuatrimestre 2024\BDD Aplicada\Datasets---Informacion-necesaria\Dataset\Centro_Autorizaciones.Estudios clinicos.json', single_clob) as j
+	
+	insert into #AutorizacionEstudiosTemp (area,estudio,prestador,plan_,[Porcentaje Cobertura],costo,[Requiere autorizacion])
+	select area,estudio,prestador,plan_,[Porcentaje Cobertura],costo,[Requiere autorizacion]
+	from openrowset (bulk 'C:\Centro_Autorizaciones.Estudios clinicos.json',CODEPAGE = '65001', single_clob) as j
 	cross apply openjson(bulkcolumn)
 	with (
-			id varchar(25) '$._id."$oid"',
-			area varchar(30) '$.Area',
-			estudio varchar(30) '$.Estudio',
-			prestador varchar(30) '$.Prestador',
-			plan_ varchar(30) '$.Plan',
-			porcentaje int '$.Porcentaje Cobertura',
-			costo decimal(10,2) '$.Costo',
-			autorizacion bit '$.Requiere autorizacion'
+			
+			area nvarchar(max) '$.Area',
+			estudio nvarchar(max) '$.Estudio',
+			prestador nvarchar(max) '$.Prestador',
+			plan_ nvarchar(max) '$.Plan',
+			[Porcentaje Cobertura] int,
+			costo int '$.Costo',
+			[Requiere autorizacion] bit 
 	) as estudio;
+
+
+	update #AutorizacionEstudiosTemp
+	set area = REPLACE (area,'√°', '·'),
+		estudio = REPLACE (estudio,'√°', '·'),
+		prestador = REPLACE (prestador,'√°', '·'),
+		plan_ = REPLACE(plan_,'√°', '·')
+	where area like ('%√°%') or estudio like ('%√°%') or
+			prestador like ('%√°%') or plan_ like ('%√°%')
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'√©','È'),
+		estudio = REPLACE (estudio,'√©', 'È'),
+		prestador = REPLACE (prestador,'√©', 'È'),
+		plan_ = REPLACE(plan_,'√©', 'È')
+	where area like ('%√©%') or estudio like ('%√©%') or
+			prestador like ('%√©%') or plan_ like ('%√©%')
+
+
+	update #AutorizacionEstudiosTemp
+	set area = REPLACE (area,'√≠', 'Ì'),
+		estudio = REPLACE (estudio,'√≠', 'Ì'),
+		prestador = REPLACE (prestador,'√≠', 'Ì'),
+		plan_ = REPLACE(plan_,'√≠', 'Ì')
+	where estudio like ('%√≠%') or area like ('%√≠%') or
+			prestador like ('%√≠%') or plan_ like ('%√≠%')
+
+	update #AutorizacionEstudiosTemp
+	set area = REPLACE (area,'√≥', 'Û'),
+		prestador = REPLACE (prestador,'√≥', 'Û'),
+		estudio = REPLACE (estudio,'√≥', 'Û'),
+		plan_ = REPLACE(plan_,'√≥', 'Û')
+	where area like ('%√≥%') or estudio like ('%√≥%') or
+			prestador like ('%√≥%') or plan_ like ('%√≥%')
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'√∫','˙'),
+		prestador = REPLACE (prestador,'√∫', '˙'),
+		estudio = REPLACE (estudio,'√∫', '˙'),
+		plan_ = REPLACE(plan_,'√∫', '˙')
+	where area like ('%√∫%') or prestador like ('%√∫%') or
+			estudio like ('%√∫%') or plan_ like ('%√∫%')
+
+
+	update #AutorizacionEstudiosTemp
+	set area = REPLACE (area,'√Å', '¡'),
+		prestador = REPLACE (prestador,'√Å', '¡'),
+		estudio = REPLACE (estudio,'√Å', '¡'),
+		plan_ = REPLACE(plan_,'√Å', '¡')
+	where area like ('%√Å%') or prestador like ('%√Å%') or
+			estudio like ('%√Å%') or plan_ like ('%√Å%')
+
+
+	update #AutorizacionEstudiosTemp
+	set area = REPLACE (area,'√â', '…'),
+		prestador = REPLACE (prestador,'√â', '…'),
+		estudio = REPLACE (estudio,'√â', '…'),
+		plan_ = REPLACE(plan_,'√â', '…')
+	where area like ('%√â%') or prestador like ('%√â%') or
+			estudio like ('%√â%') or plan_ like ('%√â%')
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'√ç','Õ'),
+		prestador = REPLACE (prestador,'√ç', 'Õ'),
+		estudio = REPLACE (estudio,'√ç', 'Õ'),
+		plan_ = REPLACE(plan_,'√ç', 'Õ')
+	where area like ('%√ç%') or prestador like ('%√ç%') or
+			estudio like ('%√ç%') or plan_ like ('%√ç%')
+
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'√ì','”'),
+		prestador = REPLACE (prestador,'√ì', '”'),
+		estudio = REPLACE (estudio,'√ì', '”'),
+		plan_ = REPLACE(plan_,'√ì', '”')
+	where area like ('%√ì%') or prestador like ('%√ì%') or
+			estudio like ('%√ì%') or plan_ like ('%√ì%')
+
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'√ö','⁄'),
+		prestador = REPLACE (prestador,'√ö', '⁄'),
+		estudio = REPLACE (estudio,'√ö', '⁄'),
+		plan_ = REPLACE(plan_,'√ö', '⁄')
+	where area like ('%√ö%') or prestador like ('%√ö%') or
+			estudio like ('%√ö%') or plan_ like ('%√ö%')
+
+
+	update #AutorizacionEstudiosTemp
+	set area = REPLACE (area,'√', '‡'),
+		prestador = REPLACE (prestador,'√', '‡'),
+		estudio = REPLACE (estudio,'√', '‡'),
+		plan_ = REPLACE(plan_,'√', '‡')
+	where area like ('%√%') or prestador like ('%√%') or
+			estudio like ('%√%') or plan_ like ('%√%')
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'√±','Ò'),
+		prestador = REPLACE (prestador,'√±', 'Ò'),
+		estudio = REPLACE (estudio,'√±', 'Ò'),
+		plan_ = REPLACE(plan_,'√±', 'Ò')
+	where area like ('%√±%') or prestador like ('%√±%') or
+			estudio like ('%√±%') or plan_ like ('%√±%')
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'√ë','—'),
+		prestador = REPLACE (prestador,'√ë', '—'),
+		estudio = REPLACE (estudio,'√ë', '—'),
+		plan_ = REPLACE(plan_,'√ë', '—')
+	where area like ('%√ë%') or prestador like ('%√ë%') or
+			estudio like ('%√ë%') or plan_ like ('%√ë%')
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'¬∫','∞'),
+		prestador = REPLACE (prestador,'¬∫', '∞'),
+		estudio = REPLACE (estudio,'¬∫', '∞'),
+		plan_ = REPLACE(plan_,'¬∫', '∞')
+	where area like ('%¬∫%') or prestador like ('%¬∫%') or
+			estudio like ('%¬∫%') or plan_ like ('%¬∫%')
+	
+	--falta crear tabla para importarlo definitivamente......
+
+	drop table #AutorizacionEstudiosTemp
 
 
 end
