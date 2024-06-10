@@ -134,7 +134,7 @@ go
 
 create table servicio.Estado_turno(
 	id_estado int primary key identity(1,1),
-    nombre_estado varchar(10)  check(nombre_estado in ('reservado','atendido', 'ausente', 'cancelado'))
+    nombre_estado varchar(10)  check(nombre_estado in ('disponible','reservado','atendido', 'ausente', 'cancelado'))
 );
 go
 
@@ -180,7 +180,7 @@ create table servicio.Dias_por_sede(                 -- la voy a usar a la hora 
     id_medico int,
     id_sede int,
     dia varchar(10) check(lower(rtrim(ltrim(dia))) in('lunes','martes','miercoles','jueves','viernes','sabado')),
-    horario_inicio time(0),
+    horario_inicio time(0) check(horario_inicio between '08:00' and '18:00'),
     constraint fk_dia_medico foreign key (id_medico) references personal.Medico(id_medico),
     constraint fk_dia_sede foreign key (id_sede) references servicio.Sede(id_sede),
     constraint pk_dias_por_sede primary key (id_medico,id_sede)
@@ -189,7 +189,7 @@ go
 create table servicio.Reserva_de_turno_medico(  -- hay que verificar en la insercion de un turno que se encuentre dentro de los dias que ese medico atiende y que el turno no este tomado
 	id_turno int primary key identity(1,1),
     fecha date,
-    hora time,
+    hora time(0),
     id_medico int,
     id_sede int,
     id_estado_turno int,

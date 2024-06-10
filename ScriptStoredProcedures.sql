@@ -188,7 +188,7 @@ begin
 	if(@Id_paciente in (	
 		select id_historia_clinica
 		from datos_paciente.Paciente
-	))
+	)and @id_paciente not in (select id_paciente from datos_paciente.Domicilio)) --no inserta duplicados
 	begin
 		insert into datos_paciente.Domicilio values
 		(
@@ -203,7 +203,6 @@ begin
 			@id_paciente
 		)
 	end
-
 end
 go
 
@@ -285,7 +284,8 @@ create or alter	procedure servicio.insertarEstudio
 )
 as
 begin
-	if(@id_paciente in(select id_historia_clinica from datos_paciente.Paciente))
+	if(@id_paciente in(select id_historia_clinica from datos_paciente.Paciente)and
+		(@id_paciente not in(select id_paciente from servicio.Estudio where fecha_estudio=@fecha_estudio)))  --non permite mas de un estudio al mismo paciente en el mismo momento
 
 	insert into servicio.Estudio(fecha_estudio,nombre_estudio,autorizado,id_paciente,imagen_resultado,documento_resultado) values 
 	(    
@@ -306,6 +306,7 @@ create or alter	procedure servicio.insertarEstadoTurno
 )
 as
 begin
+		if(not exists(select 1 from servicio.Estado_turno where nombre_estado=@nombre_estado))
 		insert into servicio.Estado_turno values 
 		(    
 			@nombre_estado    --valores validos ('reservado','atendido', 'ausente', 'cancelado')
@@ -320,7 +321,7 @@ create or alter	procedure servicio.insertarTipoTurno
 )
 as
 begin
-	
+	if(not exists(select 1 from servicio.Tipo_turno where nombre_tipo_turno= @nombre_tipo_turno ))
 	insert into servicio.Tipo_turno values 
 	(    
 		@nombre_tipo_turno
@@ -456,29 +457,40 @@ begin
 	when datepart(weekday, @fecha) = 6 then 'viernes'
 	when datepart(weekday, @fecha) = 7 then 'sabado'
 	end
+	
+	declare @hora_inicio time(0)
+	select @hora_inicio = (select horario_inicio from servicio.Dias_por_sede where id_medico=@id_medico and id_sede=@id_sede and dia=@dia)
 
-
-	if(@id_medico in (select id_medico from servicio.Dias_por_sede) and
-		@id_sede in (select id_sede from servicio.Dias_por_sede where id_medico = @id_medico) and 
-		@dia in (select dia from servicio.Dias_por_sede where id_medico = @id_medico and id_sede = @id_sede) and
-		@id_estado_turno in (select id_estado from servicio.Estado_turno) and						
-		@id_tipo_turno in (select id_tipo_turno from servicio.Tipo_turno) and
-		@id_paciente in (select id_historia_clinica from datos_paciente.Paciente))
-
-	begin
-		insert into servicio.Reserva_de_turno_medico values 
-		(    
-			@fecha,
-			@hora,
-			@id_medico,
-			@id_sede,
-			@id_estado_turno,
-			@id_tipo_turno,
-			@id_paciente
-		)
+	if (@hora_inicio is not null and DATEDIFF(minute,@hora_inicio, @hora)%15=0)--verifico que el horario sea a 15 minutos y que  el medico atienda ese dia en esa sucursal
+	begin 
+			if(@id_estado_turno in (select id_estado from servicio.Estado_turno) and						
+			@id_tipo_turno in (select id_tipo_turno from servicio.Tipo_turno) and
+			@id_paciente in (select id_historia_clinica from datos_paciente.Paciente))
+			begin 
+				if( 
+				not exists(select 1 from servicio.Reserva_de_turno_medico
+						where fecha=@fecha and hora=@hora and id_medico=@id_medico and id_sede=@id_sede))--verifico que no este asignado
+					begin
+						insert into servicio.Reserva_de_turno_medico values 
+						(    
+							@fecha,
+							@hora,
+							@id_medico,
+							@id_sede,
+							@id_estado_turno,
+							@id_tipo_turno,
+							@id_paciente
+						)
+					end
+					else
+						select 'turno ya asignado'
+			end
 	end
+	else
+		select 'dia u horario incorrecto'
 end
 go
+
 
 
 -----MODIFIES----------------------

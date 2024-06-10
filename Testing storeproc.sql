@@ -55,8 +55,29 @@ exec servicio.insertarSede 'Trinidad de Ramos Mejia', 'juan de araoz', 'Ramos Me
 select * from servicio.Sede
 
 exec servicio.insertarDiasPorSede 1, 1, 'martes', '15:00' -- id_medico int, id_sede int, dia varchar(10) 'lunes','marte','miercoles','jueves','viernes','sabado', horario_inicio time,
+
+BEGIN TRY  
+    exec servicio.insertarDiasPorSede 1,1,'jueves', '21:00'     --horario de inicio fuera de rango 
+END TRY  
+BEGIN CATCH  
+    select 'FUERA DE RANGO HORARIO'
+END CATCH;   
+
+exec servicio.insertarTipoTurno 'virtual'--id 1
+go
+exec servicio.insertarTipoTurno 'presencial'--id 2
+go
+
+exec servicio.insertarEstadoTurno 'reservado' --id 1
+exec servicio.insertarEstadoTurno 'ausente' --id 2
+exec servicio.insertarEstadoTurno 'atendido'--id 3
+go
+
+exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,2,1 --fecha, hora, id_medico,id_sede, id_estado de turno,id_tipo_turno,id_paciente 
+go
+select * from servicio.Reserva_de_turno_medico
+go
+
+
+
 select * from servicio.Dias_por_sede
-
-
-
-
