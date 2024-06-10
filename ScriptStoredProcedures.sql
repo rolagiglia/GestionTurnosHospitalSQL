@@ -483,11 +483,11 @@ begin
 						)
 					end
 					else
-						select 'turno ya asignado'
+						RAISERROR (N'turno ya asignado',1,1,'',5)
 			end
 	end
 	else
-		select 'dia u horario incorrecto'
+		RAISERROR (N'dia u horario incorrecto',1,1,'',5)
 end
 go
 
