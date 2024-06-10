@@ -71,6 +71,7 @@ go
 exec servicio.insertarEstadoTurno 'reservado' --id 1
 exec servicio.insertarEstadoTurno 'ausente' --id 2
 exec servicio.insertarEstadoTurno 'atendido'--id 3
+exec servicio.insertarEstadoTurno 'cancelado'--id 4
 go
 
 exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,1,2,1 --fecha, hora, id_medico,id_especialidad,id_sede, id_estado de turno,id_tipo_turno,id_paciente 
@@ -78,7 +79,16 @@ go
 exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,1,2,1 --no permite duplicados
 exec servicio.insertarReservaTurno '28/06/2024','08:40',1,5,1,1,2,1 --no permite turnos cada menos de 15 minutos
 
+exec servicio.modificarReservaEstadoTurno 1,4 -- id_turno, id_estado_turno  modifico el turno a cancelado 
+
+exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,1,2,1  --ahora puedo reservar ese turno cancelado
+
 exec datos_paciente.modificarFotoPaciente 1,'nuevadirecciondefoto','usuario_medico'  --modifica foto y registra usuario
 
+select * from servicio.Reserva_de_turno_medico
+select * from servicio.Dias_por_sede
 
+exec servicio.modificarReservaFechaHoraTurno 3,'2024-07-05','08:30' --@id_turno @fecha @hora  --modifico la fecha y horario del turno
+
+exec servicio.modificarReservaFechaHoraTurno 3,'2024-07-04','08:30'    -- NO LO MODIFCA PORQUE ES UN DIA QUE ESE MEDICO NO ATIENDE
 
