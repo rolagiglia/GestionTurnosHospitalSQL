@@ -649,7 +649,7 @@ go
 create or alter procedure importacion.importarEstudios(@path varchar(max)) as
 begin
 
-	create table #AutorizacionEstudiosTemp
+	create table #AutorizacionEstudiosTemp 
 	(
 		area nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
 		estudio nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
@@ -662,7 +662,7 @@ begin
 	
 	insert into #AutorizacionEstudiosTemp (area,estudio,prestador,plan_,[Porcentaje Cobertura],costo,[Requiere autorizacion])
 	select area,estudio,prestador,plan_,[Porcentaje Cobertura],costo,[Requiere autorizacion]
-	from openrowset (bulk '@path',CODEPAGE = '65001', single_clob) as j
+	from openrowset (bulk 'C:\Users\Ivi\Downloads\TP3-BBDDA-main\TP3-BBDDA-main\Centro_Autorizaciones.Estudios clinicos.json', single_clob) as j
 	cross apply openjson(bulkcolumn)
 	with (
 			
@@ -674,7 +674,6 @@ begin
 			costo int '$.Costo',
 			[Requiere autorizacion] bit 
 	) as estudio;
-
 
 	update #AutorizacionEstudiosTemp
 	set area = REPLACE (area,'á', '�'),
@@ -794,13 +793,16 @@ begin
 	where area like ('%º%') or prestador like ('%º%') or
 			estudio like ('%º%') or plan_ like ('%º%')
 	
-	insert into servicio.autorizacion_de_estudio 
-		select * 
-		from #AutorizacionEstudiosTemp
-
-
-	drop table #AutorizacionEstudiosTemp
-
 	
+	delete from #AutorizacionEstudiosTemp   --elimino si hay algun null en la temporal
+	where estudio is null
+
+	insert into servicio.autorizacion_de_estudio				--inserto en la base de datos
+		select area,estudio,prestador,plan_ ,[Porcentaje Cobertura],costo,[Requiere autorizacion]  
+		from #AutorizacionEstudiosTemp t
+		where not exists(select 1 
+						from servicio.autorizacion_de_estudio a
+						where (t.area=a.area and t.estudio=a.estudio and t.prestador=a.prestador and t.plan_=a.plan_) or t.area is null )   --no inserta repetidos
+
 
 end

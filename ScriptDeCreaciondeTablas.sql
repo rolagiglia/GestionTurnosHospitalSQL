@@ -1,7 +1,7 @@
 /* Script de creacion de DB y tablas */
 -- se crean ademas los schemas datos_paciente, comercial, servicio, personal
 
-create database Com5600G16 collate SQL_Latin1_General_CP1_CI_AI;
+create database Com5600G16 collate SQL_Latin1_General_CP1_CI_AS;
 go
 
 use Com5600G16;
@@ -19,7 +19,7 @@ create table datos_paciente.Paciente (
     fecha_nacimiento date,
     tipo_documento varchar(10),
     nro_documento int NOT NULL UNIQUE,
-    sexo_biologico varchar(10) check (lower(rtrim(ltrim(sexo_biologico))) in('masculino','femenino')),  -- masculino o femenino
+    sexo_biologico varchar(10) check (lower(rtrim(ltrim(sexo_biologico))) in('masculino','femenino')),
     genero varchar(10),
     nacionalidad varchar(30),
     dir_foto_perfil varchar(100),
@@ -58,12 +58,13 @@ CREATE table datos_paciente.Domicilio(
     CONSTRAINT fk_paciente_domicilio foreign key  (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
 );
 go
+
 CREATE SCHEMA comercial; 
 go
 
 CREATE table comercial.Prestador(
 	id_prestador int PRIMARY KEY identity(1,1),
-    nombre_prestador varchar (20),
+    nombre_prestador varchar (50) not null check(nombre_prestador<>''),
     borrado bit default 0           --borrado logico, en 0 indica plan activo
 );
 go
@@ -71,7 +72,7 @@ go
 CREATE table comercial.Plan_Prestador(                        -- planes por prestador
 	id_plan int identity(1,1),                    
     id_prestador int,
-    nombre_plan varchar (40),
+    nombre_plan varchar (40) not null check(nombre_plan<>''),
 	borrado bit default 0 --borrado logico, en 0 indica plan activo
     CONSTRAINT fk_prestador_plan foreign key (id_prestador) references comercial.Prestador(id_prestador),
     CONSTRAINT pk_plan primary key  (id_plan,id_prestador)
@@ -81,7 +82,7 @@ go
 CREATE table datos_paciente.Cobertura(
 	id_cobertura int PRIMARY KEY identity(1,1),
     dir_imagen_credencial varchar(100), -- direccion de la imagen
-    nro_socio int,      
+    nro_socio int not null,      
     fecha_registro date default(convert(date,getdate())),
     id_prestador int,
     id_plan int,
@@ -97,7 +98,7 @@ go
 create table servicio.Estudio(
 	id_estudio int primary key identity(1,1),
     fecha_estudio date not null,
-    nombre_estudio varchar(50) not null,
+    nombre_estudio varchar(50) not null check(nombre_estudio<>''),
     autorizado varchar(10) default 'pendiente',
 	costo int default null,
 	id_paciente int,
@@ -126,27 +127,25 @@ go
 
 create table personal.Especialidad(
 	id_especialidad int primary key identity(1,1),
-    nombre_especialidad varchar(30) not null
+    nombre_especialidad varchar(30) not null check(nombre_especialidad<>''),
+	borrado bit default 0
 );
 go
---drop table personal.Medico
---drop table personal.Especialidad
 
 create table personal.Medico(
 	id_medico int primary key identity(1,1),
-    nombre_medico varchar(30),
-    apellido_medico varchar(35),
-    id_especialidad int,
-	nro_colegiado int UNIQUE,
+    nombre_medico varchar(50),
+    apellido_medico varchar(50)not null check(apellido_medico<>''),
+	nro_colegiado int not null UNIQUE,
 	borrado bit default 0, --borrado logico
-    constraint fk_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad)
 );
 go
 
+
 create table servicio.Sede(
 	id_sede int primary key identity(1,1),
-    nombre_sede varchar(30),
-    direccion_sede varchar(30),
+    nombre_sede varchar(40),
+    direccion_sede varchar(50),
 	localidad_sede varchar (30),
 	provincia_sede varchar (30),
 	borrado bit default 0   -- borrado logico por defecto 0, borrado en 1
@@ -154,19 +153,26 @@ create table servicio.Sede(
 go
 
 create table servicio.Dias_por_sede(                 -- la voy a usar a la hora de validar los turnos
-    id_medico int,
+    id int primary key identity(1,1),
+	id_medico int,
     id_sede int,
+	id_especialidad int,
     dia varchar(10) check(lower(rtrim(ltrim(dia))) in('lunes','martes','miercoles','jueves','viernes','sabado')),
     horario_inicio time(0) check(horario_inicio between '08:00' and '18:00'),
+	horario_fin time(0) check(horario_fin between '12:00' and '20:00'),
     constraint fk_dia_medico foreign key (id_medico) references personal.Medico(id_medico),
     constraint fk_dia_sede foreign key (id_sede) references servicio.Sede(id_sede),
-    constraint pk_dias_por_sede primary key (id_medico,id_sede)
+	constraint fk_dia_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad),
+   
 );
+
+
+
 go
 create table servicio.Reserva_de_turno_medico(  -- hay que verificar en la insercion de un turno que se encuentre dentro de los dias que ese medico atiende y que el turno no este tomado
 	id_turno int primary key identity(1,1),
-    fecha date,
-    hora time(0),
+    fecha date not null,
+    hora time(0) not null,
     id_medico int,
 	id_especialidad int,
     id_sede int,
@@ -183,13 +189,21 @@ create table servicio.Reserva_de_turno_medico(  -- hay que verificar en la inser
 );
 go
 
-create table servicio.autorizacion_de_estudio(
+create table servicio.autorizacion_de_estudio (
 		id int primary key identity(1,1),
-		area nvarchar(max) ,
-		estudio nvarchar(max),
-		prestador nvarchar(max) ,
-		plan_ nvarchar(max) ,
+		area nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		estudio nvarchar(max)COLLATE SQL_Latin1_General_CP1_CI_AS,
+		prestador nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		plan_ nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
 		[Porcentaje Cobertura] int,
 		costo decimal(10,2),
 		[Requiere autorizacion] bit
+)
+
+create table personal.medico_especialidad(
+	id_medico int,
+	id_especialidad int,
+	constraint fk_medico_especialidad foreign key (id_medico) references personal.Medico(id_medico),
+	constraint fk_especialidad_medico_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad),
+	constraint pk_medico_especialidad primary key(id_medico,id_especialidad)
 )
