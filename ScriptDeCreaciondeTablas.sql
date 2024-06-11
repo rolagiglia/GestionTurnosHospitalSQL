@@ -1,31 +1,6 @@
 /* Script de creacion de DB y tablas */
--- se crean los schemas datos_paciente, comercial, servicio, personal
+-- se crean ademas los schemas datos_paciente, comercial, servicio, personal
 
-/*eliminar todo
-  
- drop table servicio.Reserva_de_turno_medico;
- drop table datos_paciente.Usuario;
- drop table datos_paciente.Domicilio;
- drop table datos_paciente.Cobertura;
- drop table datos_paciente.Paciente; 
- drop table comercial.Plan_Prestador;
- drop table comercial.Prestador;
- drop table servicio.Estudio;
- drop table servicio.Estado_turno;
- drop table servicio.Tipo_turno;
- drop table servicio.Dias_por_sede;
- drop table servicio.Sede;
- drop table personal.Medico;
- drop table personal.Especialidad;
- 
- drop schema comercial;
- drop schema datos_paciente;
- drop schema servicio;
- drop schema personal;
- use master;
- drop database  Com5600G16;
- */
- 
 create database Com5600G16 collate SQL_Latin1_General_CP1_CI_AI;
 go
 
@@ -34,7 +9,8 @@ go
 
 Create Schema datos_paciente;  -- SCHEMA
 go
-
+create schema importacion
+go
 create table datos_paciente.Paciente (
 	id_historia_clinica int primary key identity(1,1),
     nombre varchar(30),
@@ -118,12 +94,12 @@ go
 
 CREATE schema servicio;
 go
-
 create table servicio.Estudio(
 	id_estudio int primary key identity(1,1),
     fecha_estudio date not null,
     nombre_estudio varchar(50) not null,
     autorizado varchar(10) default 'pendiente',
+	costo int default null,
 	id_paciente int,
 	imagen_resultado varchar(100)  ,  --direccion de la imagen
 	documento_resultado varchar(100),  -- direccion del documento
@@ -206,3 +182,14 @@ create table servicio.Reserva_de_turno_medico(  -- hay que verificar en la inser
     constraint fk_turno_paciente foreign key (id_paciente) references datos_paciente.Paciente(id_historia_clinica)
 );
 go
+
+create table servicio.autorizacion_de_estudio(
+		id int primary key identity(1,1),
+		area nvarchar(max) ,
+		estudio nvarchar(max),
+		prestador nvarchar(max) ,
+		plan_ nvarchar(max) ,
+		[Porcentaje Cobertura] int,
+		costo decimal(10,2),
+		[Requiere autorizacion] bit
+)

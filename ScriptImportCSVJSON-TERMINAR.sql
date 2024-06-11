@@ -1,11 +1,10 @@
 -------------------ENTREGA 4---------------------
-
+/*STORE PROC Y FUNCIONES NECESARIAS PARA IMPORTACION DE ARCHIVOS MAESTROS */
 use Com5600G16
 go
-create schema importacion
-go
 
-CREATE or alter FUNCTION importacion.ExtraerUltimosNumeros(@cadena NVARCHAR(100))
+
+CREATE or alter FUNCTION importacion.ExtraerUltimosNumeros(@cadena NVARCHAR(100)) 
 RETURNS NVARCHAR(100)
 AS
 BEGIN
@@ -48,7 +47,7 @@ BEGIN
     RETURN @ultimosNumeros
 END
 GO
-create or alter procedure importacion.importarPacientes as
+create or alter procedure importacion.importarPacientes(@path varchar(max)) as
 begin
 
 create table #PacientesTemporal (
@@ -68,7 +67,7 @@ create table #PacientesTemporal (
 )
 
 	bulk insert #PacientesTemporal
-	from 'C:\Users\Ivi\Desktop\FACU 2024\BBDD APLICADA\TP parte 3 BBDDA\Datasets---Informacion-necesaria\Dataset\Pacientes.csv' ---esto no puede estar en el tp final
+	from '@path'
 	with
 	(
 		FIELDTERMINATOR = ';',
@@ -247,7 +246,7 @@ end
 go
 
 
-create or alter procedure importacion.importarMedicos as
+create or alter procedure importacion.importarMedicos(@path varchar(max)) as
 begin
 
 create table #MedicosTemporal (
@@ -258,7 +257,7 @@ create table #MedicosTemporal (
 )
 
 	bulk insert #MedicosTemporal
-	from 'C:\Users\Ivi\Desktop\FACU 2024\BBDD APLICADA\TP parte 3 BBDDA\Datasets---Informacion-necesaria\Dataset\Medicos.csv' ---esto no puede estar en el tp final, tiene que ser una direccion general
+	from '@path'
 	with
 	(
 		FIELDTERMINATOR = ';',
@@ -362,9 +361,6 @@ create table #MedicosTemporal (
 	SET Apellido = SUBSTRING(Apellido, CHARINDEX(' ', Apellido) + 1, LEN(Apellido) - CHARINDEX(' ', Apellido))
 	WHERE CHARINDEX(' ', Apellido) > 0;
 
-
-	  
-	
 	insert into personal.Especialidad(nombre_especialidad)
 		select Especialidad 
 		from #MedicosTemporal
@@ -383,7 +379,7 @@ end
 go
 
 
-create or alter procedure importacion.importarSedes as
+create or alter procedure importacion.importarSedes(@path varchar(max)) as
 begin
 	
 	create table #SedesTemporal
@@ -395,7 +391,7 @@ begin
 	)
 
 	bulk insert #SedesTemporal
-	from 'C:\Users\Ivi\Desktop\FACU 2024\BBDD APLICADA\TP parte 3 BBDDA\Datasets---Informacion-necesaria\Dataset\Sedes.csv' ---esto no puede estar en el tp final, tiene que ser una direccion general
+	from '@path' 
 	with
 	(
 		FIELDTERMINATOR = ';',
@@ -532,7 +528,7 @@ end
 go
 
 
-create or alter procedure importacion.importarPrestador as
+create or alter procedure importacion.importarPrestador(@path varchar(max)) as
 begin
 	
 	create table #PrestadorTemporal
@@ -543,7 +539,7 @@ begin
 
 
 	bulk insert #PrestadorTemporal
-	from 'C:\Users\Ivi\Desktop\FACU 2024\BBDD APLICADA\TP parte 3 BBDDA\Datasets---Informacion-necesaria\Dataset\Prestador.csv' ---esto no puede estar en el tp final, tiene que ser una direccion general
+	from '@path' ---esto no puede estar en el tp final, tiene que ser una direccion general
 	with
 	(
 		FIELDTERMINATOR = ';',
@@ -650,7 +646,7 @@ go
 
 
 
-create or alter procedure importacion.importarEstudios as
+create or alter procedure importacion.importarEstudios(@path varchar(max)) as
 begin
 
 	create table #AutorizacionEstudiosTemp
@@ -666,7 +662,7 @@ begin
 	
 	insert into #AutorizacionEstudiosTemp (area,estudio,prestador,plan_,[Porcentaje Cobertura],costo,[Requiere autorizacion])
 	select area,estudio,prestador,plan_,[Porcentaje Cobertura],costo,[Requiere autorizacion]
-	from openrowset (bulk 'C:\Centro_Autorizaciones.Estudios clinicos.json',CODEPAGE = '65001', single_clob) as j
+	from openrowset (bulk '@path',CODEPAGE = '65001', single_clob) as j
 	cross apply openjson(bulkcolumn)
 	with (
 			
@@ -798,9 +794,13 @@ begin
 	where area like ('%º%') or prestador like ('%º%') or
 			estudio like ('%º%') or plan_ like ('%º%')
 	
-	--falta crear tabla para importarlo definitivamente......
+	insert into servicio.autorizacion_de_estudio 
+		select * 
+		from #AutorizacionEstudiosTemp
+
 
 	drop table #AutorizacionEstudiosTemp
 
+	
 
 end

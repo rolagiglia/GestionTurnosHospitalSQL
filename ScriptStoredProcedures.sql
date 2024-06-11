@@ -1,87 +1,6 @@
 /* Script de SP de insercion, modificacion y eliminacion */
--- se crean las stored procedures correspondientes a la insercion, modificacion y eliminacion de las distintas tablas
 
-/*eliminar todo
-  
- drop table servicio.Reserva_de_turno_medico;
- drop table datos_paciente.Usuario;
- drop table datos_paciente.Domicilio;
- drop table datos_paciente.Cobertura;
- drop table datos_paciente.Paciente; 
- drop table comercial.Plan_Prestador;
- drop table comercial.Prestador;
- drop table servicio.Estudio;
- drop table servicio.Estado_turno;
- drop table servicio.Tipo_turno;
- drop table servicio.Dias_por_sede;
- drop table servicio.Sede;
- drop table personal.Medico;
- drop table personal.Especialidad;
- 
- drop schema comercial;
- drop schema datos_paciente;
- drop schema servicio;
- drop schema personal;
- use master;
- drop database  Com5600G16;
-
- drop procedure insertarPaciente;
- drop procedure insertarUsuario;
- drop procedure insertarDomicilio;
- drop procedure insertarPrestador;
- drop procedure insertarPlanPrestador;
- drop procedure insertarCobertura;
- drop procedure insertarEstudio;
- drop procedure insertarEstadoTurno;
- drop procedure insertarTipoTurno;
- drop procedure insertarEspecialidad;
- drop procedure insertarMedico;
- drop procedure insertarSede;
- drop procedure insertarDiasPorSede;
- drop procedure insertarReservaTurno; 
-
-
-
-
- drop procedure modificarFotoPaciente;
- drop procedure modificarTelPaciente;
- drop procedure modificarContraseniaUsuario;
- drop procedure modificarDomicilio;
- drop procedure modificarPrestador;
- drop procedure modificarPlan;
- drop procedure modificarCobertura;
- drop procedure modificarEstudio;
- drop procedure modificarEstadoTurno;
- drop procedure modificarTipoTurno;
- drop procedure modificarEspecialidadMedico;
- drop procedure modificarDireccionSede;
- drop procedure modificarDiasSede;
- drop procedure modificarReservaTipoTurno;
- drop procedure modificarReservaFechaHoraTurno;
- drop procedure modificarReservaEstadoTurno;
- drop procedure modificarReservaMedicoSede;
-
-
-
-
- drop procedure eliminarPaciente;
- drop procedure eliminarPrestador;
- drop procedure eliminarPlan;
- drop procedure eliminarEstudio;
- drop procedure eliminarTurno;
- drop procedure eliminarUsuario;
- drop procedure eliminarDomicilio;
- drop procedure eliminarTipoTurno;
- drop procedure eliminarEstadoTurno;
- drop procedure eliminarEspecialidad;
- drop procedure eliminarMedico;
- drop procedure eliminarSede;
- drop procedure eliminarCobertura;
- drop procedure eliminarDiasSede;
- */
-
-
- -----STORED PROCEDURES------------
+-----STORED PROCEDURES------------
 -----INSERTS----------------------
 
 
@@ -241,7 +160,7 @@ begin
 	--verifico que exista el prestador y evito que se inserte un plan repetido
 	if(@id_prestador in (select id_prestador from comercial.Prestador)and @nombre_plan not in(select nombre_plan from comercial.Plan_Prestador where id_prestador=@id_prestador)) 
 	begin
-		insert into comercial.Plan_Prestador values (@id_prestador, @nombre_plan)
+		insert into comercial.Plan_Prestador (id_prestador,nombre_plan) values (@id_prestador, @nombre_plan)
 	end
 	else 
 		RAISERROR('ERROR insercion NO REALIZADA',5,5,'')
@@ -263,7 +182,7 @@ as
 begin
 	
 	if(@id_prestador in (select id_prestador from comercial.Plan_Prestador where borrado=0) and     --verifica que exista el prestador, el plan y el paciente
-		@id_plan in (select id_plan from comercial.Plan_Prestador borrado=0) and
+		@id_plan in (select id_plan from comercial.Plan_Prestador where borrado=0) and
 		@id_paciente in (select id_historia_clinica from datos_paciente.Paciente where borrado=0)and 
 		@id_paciente not in(select id_paciente from datos_paciente.Cobertura))       --no permite la insercion de mas de una cobertura para un paciente
 		begin
@@ -509,7 +428,7 @@ begin
 	declare @hora_inicio time(0)
 	select @hora_inicio = (select horario_inicio from servicio.Dias_por_sede d inner join personal.Medico m on d.id_medico=m.id_medico
 						inner join servicio.Sede s on s.id_sede=d.id_sede
-						where d.id_medico=@id_medico and id_sede=@id_sede and dia=@dia and m.id_especialidad= @id_especialidad and m.borrado=0 and s.borrado=0)  --obtengo la hora de inicio y verifico que el medico este activo
+						where d.id_medico=@id_medico and s.id_sede=@id_sede and dia=@dia and m.id_especialidad= @id_especialidad and m.borrado=0 and s.borrado=0)  --obtengo la hora de inicio y verifico que el medico este activo
 
 	if (@hora_inicio is not null and DATEDIFF(minute,@hora_inicio, @hora)%15=0)--verifico que el horario sea multiplo de 15 minutos y que  el medico atienda ese dia en esa sede esa especialidad
 	begin 
@@ -520,7 +439,7 @@ begin
 				if(not exists(select 1 from servicio.Reserva_de_turno_medico t inner join servicio.Estado_turno e on t.id_estado_turno=e.id_estado
 						where t.fecha=@fecha and t.hora=@hora and t.id_medico=@id_medico and t.id_sede=@id_sede and e.nombre_estado='reservado' and t.borrado=0))--verifico que no este asignado el turno
 					begin
-						insert into servicio.Reserva_de_turno_medico values 
+						insert into servicio.Reserva_de_turno_medico (fecha,hora,id_medico,id_especialidad,id_sede,id_estado_turno,id_tipo_turno,id_paciente) values 
 						(    
 							@fecha,
 							@hora,
@@ -1009,8 +928,12 @@ end
 go
 
 
-
-create or alter procedure comercial.eliminarPrestador   --utilizamos borrado logico e
+/*Los prestadores están conformador por Obras Sociales y Prepagas con las cuales se establece una
+alianza comercial. Dicha alianza puede finalizar en cualquier momento, por lo cual debe poder ser
+actualizable de forma inmediata si el contrato no está vigente. En caso de no estar vigente el contrato,
+deben ser anulados todos los turnos de pacientes que se encuentren vinculados a esa prestadora y
+pasar a estado disponible.*/
+create or alter procedure comercial.eliminarPrestador   --utilizamos borrado logico 
 (   
 	@id_prestador int
 )
@@ -1018,8 +941,12 @@ as
 begin
 
 	update comercial.Prestador
-	set borrado=1   --borrado logico
+	set borrado=1                  --borrado logico
 	where id_prestador = @id_prestador
+
+	update servicio.Reserva_de_turno_medico                        
+	set borrado=1									--borra los turnos asignados a ese prestador de forma logica y se pueden utilizar para otro paciente
+	where id_paciente in(select id_paciente from datos_paciente.Cobertura where id_prestador=@id_prestador)
 
 end
 go
@@ -1146,8 +1073,8 @@ create or alter procedure eliminarEspecialidad
 )
 as
 begin
-	if(not exists(select 1 from personal.Medico where id_especialidad=@id_especialidad)
-		delete personal.Especialidad
+	if(not exists(select 1 from personal.Medico where id_especialidad=@id_especialidad))
+		delete from personal.Especialidad
 		where id_especialidad = @id_especialidad
 	else
 		RAISERROR('NO SE PUEDE ELIMINAR',5,5,'')
@@ -1205,3 +1132,24 @@ begin
 end
 go
 
+create or alter proc autorizar_estudio(@estudio varchar(max),@plan varchar(max),@nro_documento int)
+as
+begin
+	declare @porcentaje_cobertura varchar(10)
+	declare @costo int
+
+	set @porcentaje_cobertura = (select [Porcentaje Cobertura]
+								from servicio.autorizacion_de_estudio
+								where estudio=@estudio and plan_=@plan)
+
+	set @costo = (select costo
+				from servicio.autorizacion_de_estudio
+				where estudio=@estudio and plan_=@plan)
+	if(@porcentaje_cobertura is not null)
+		update servicio.Estudio
+		set autorizado=@porcentaje_cobertura,
+			costo=@costo
+		where id_paciente in(select id_paciente from datos_paciente.Paciente where nro_documento=@nro_documento)
+	
+end
+go
