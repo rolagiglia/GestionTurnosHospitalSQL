@@ -405,7 +405,7 @@ begin
 			and @horario_fin>@horario_inicio 
 			and @id_medico not in(select id_medico 
 									from servicio.Dias_por_sede 
-									where id_sede=@id_sede and (horario_inicio<@horario_fin and horario_fin>@horario_inicio)))  --que no se repita el horario de atencion
+									where id_sede=@id_sede and dia=ltrim(rtrim(@dia))))  --que el medico no atienda ese dia en esa sede
 		begin
 
 			insert into servicio.Dias_por_sede values 
@@ -430,53 +430,62 @@ create or alter	procedure servicio.insertarReservaTurno
     @fecha date,
     @hora time,
     @nro_colegiado int,
-	@nombre_especialidad int,
-    @id_sede int,
-    @id_estado_turno int,
-    @id_tipo_turno int,
-    @id_paciente int
-  --  constraint fk_turno_medico foreign key (id_medico) references personal.Medico(id_medico),
-   -- constraint fk_turno_sede foreign key (id_sede) references servicio.Sede(id_sede),
-    --constraint fk_turno_estado foreign key (id_estado_turno) references servicio.Estado_turno (id_estado),
-    --constraint fk_turno_tipo foreign key (id_tipo_turno) references servicio.Tipo_turno(id_tipo_turno),
-    --constraint fk_turno_paciente foreign key (id_paciente) references datos_paciente.Paciente(id_historia_clinica)
+	@nombre_especialidad varchar(50),
+    @nombre_sede varchar(50),
+    @nombre_tipo_turno varchar(20),
+    @nro_documento int
 )
 as
 begin
-	
+	declare @id_medico int,
+			@id_paciente int,
+			@id_sede int,
+			@id_especialidad int,
+			@id_estado int,
+			@id_tipo_turno int,
+			@hora_inicio time(0),
+			@hora_fin time(0),
+			@dia varchar(10);
+			
+	set @id_medico=(select id_medico from personal.Medico where nro_colegiado=@nro_colegiado and borrado=0)
+	set @id_especialidad=(select id_especialidad from personal.Especialidad where nombre_especialidad=ltrim(rtrim(@nombre_especialidad)) and borrado=0)
+	set @id_sede =(select id_sede from servicio.Sede where nombre_sede=ltrim(rtrim(@nombre_sede)) and borrado=0)
+	set @id_tipo_turno =(select id_tipo_turno from servicio.Tipo_turno where nombre_tipo_turno=ltrim(rtrim(@nombre_tipo_turno)))
+	set @id_estado =(select id_estado from servicio.Estado_turno where nombre_estado='reservado')
+	set @id_paciente =(select id_historia_clinica from datos_paciente.Paciente where nro_documento=@nro_documento and borrado=0)
 	---Para poder saber si el medico atiende ese dia o no, tenemos que pasar el numero que nos devuelve weekday
 	---de la fecha de a insertar a una cadena con el nombre correspondiente, 
-	---por ejemplo, si nos da "3" entonces el dia es "martes" (La semana empieza el domingo)
-
-	---Nota: verificar que este bien hecha la verificacion en el if
-	
-	
-	declare @dia varchar(10); 
+	---por ejemplo, si nos da "3" entonces el dia es "miercoles" (por defecto 1 para lunes)	
 	
 	set @dia = case 
-	
-	when datepart(weekday, @fecha) = 1 then 'domingo'
-	when datepart(weekday, @fecha) = 2 then 'lunes'
-	when datepart(weekday, @fecha) = 3 then 'martes'
-	when datepart(weekday, @fecha) = 4 then 'miercoles'
-	when datepart(weekday, @fecha) = 5 then 'jueves'
-	when datepart(weekday, @fecha) = 6 then 'viernes'
-	when datepart(weekday, @fecha) = 7 then 'sabado'
+	when datepart(weekday, @fecha) = 1 then 'lunes'
+	when datepart(weekday, @fecha) = 2 then 'martes'
+	when datepart(weekday, @fecha) = 3 then 'miercoles'
+	when datepart(weekday, @fecha) = 4 then 'jueves'
+	when datepart(weekday, @fecha) = 5 then 'viernes'
+	when datepart(weekday, @fecha) = 6 then 'sabado'
+	when datepart(weekday, @fecha) = 7 then 'domingo'
 	end
 	
-	declare @hora_inicio time(0)
-	select @hora_inicio = (select horario_inicio from servicio.Dias_por_sede d inner join personal.Medico m on d.id_medico=m.id_medico
-						inner join servicio.Sede s on s.id_sede=d.id_sede
-						where d.id_medico=@id_medico and s.id_sede=@id_sede and dia=@dia and m.id_especialidad= @id_especialidad and m.borrado=0 and s.borrado=0)  --obtengo la hora de inicio y verifico que el medico este activo
+	set @hora_inicio = (select horario_inicio from servicio.Dias_por_sede 
+							where id_medico=@id_medico and id_sede=@id_sede and 
+								dia=ltrim(rtrim(@dia)) and id_especialidad=@id_especialidad)  --obtengo la hora de inicio de atencion de ese medico ese dia en la sede en esa especialidad
+	set @hora_fin = (select horario_fin from servicio.Dias_por_sede 
+							where id_medico=@id_medico and id_sede=@id_sede and 
+								dia=ltrim(rtrim(@dia)) and id_especialidad=@id_especialidad) --obtengo horario de fin de atencion
 
-	if (@hora_inicio is not null and DATEDIFF(minute,@hora_inicio, @hora)%15=0)--verifico que el horario sea multiplo de 15 minutos y que  el medico atienda ese dia en esa sede esa especialidad
+	if (@hora_inicio is not null and @hora_fin is not null and 
+		@hora<@hora_fin and @hora>@hora_inicio and @fecha>(convert(date,getdate()))  
+		and DATEDIFF(minute,@hora_inicio, @hora)%15=0)--verifico que el horario sea multiplo de 15 minutos,que exista lo obtenido
 	begin 
-			if(@id_estado_turno in (select id_estado from servicio.Estado_turno) and						
-			@id_tipo_turno in (select id_tipo_turno from servicio.Tipo_turno) and
-			@id_paciente in (select id_historia_clinica from datos_paciente.Paciente))
+			if(@id_estado is not null and						
+			@id_tipo_turno is not null and
+			@id_paciente is not null)
 			begin 
 				if(not exists(select 1 from servicio.Reserva_de_turno_medico t inner join servicio.Estado_turno e on t.id_estado_turno=e.id_estado
-						where t.fecha=@fecha and t.hora=@hora and t.id_medico=@id_medico and t.id_sede=@id_sede and e.nombre_estado='reservado' and t.borrado=0))--verifico que no este asignado el turno
+						where t.fecha=@fecha and t.hora=@hora and t.id_medico=@id_medico and 
+								t.id_sede=@id_sede and t.id_especialidad=@id_especialidad and 
+								e.nombre_estado='reservado' and t.borrado=0))--verifico que no este asignado el turno
 					begin
 						insert into servicio.Reserva_de_turno_medico (fecha,hora,id_medico,id_especialidad,id_sede,id_estado_turno,id_tipo_turno,id_paciente) values 
 						(    
@@ -485,28 +494,50 @@ begin
 							@id_medico,
 							@id_especialidad,
 							@id_sede,
-							@id_estado_turno,
+							@id_estado,
 							@id_tipo_turno,
 							@id_paciente
 						)
 					end
 					else
-						RAISERROR (N'turno ya asignado',1,1,'',5)
+						RAISERROR (N'turno ya asignado',5,5,'')
 			end
+			else
+				RAISERROR (N'Error en valor de paciente, estado o tipo de turno',5,5,'')
 	end
 	else
-		RAISERROR (N'dia u horario incorrecto',1,1,'',5)
+		RAISERROR (N'dia u horario incorrecto',5,5,'')
 end
 go
 
+create or alter proc personal.insertar_relacion_medico_especialidad
+	(
+		@nro_colegiado int,
+		@nombre_especialidad varchar(50)
+	)
+AS
+BEGIN
+	declare @id_medico int,
+			@id_especialidad int
 
-
+	set @id_medico=(select id_medico from personal.Medico where nro_colegiado=@nro_colegiado and borrado=0)
+	set @id_especialidad=(select id_especialidad from personal.Especialidad where nombre_especialidad=@nombre_especialidad and borrado=0)
+	if(@id_medico is not null and @id_especialidad is not null)
+		insert into personal.medico_especialidad values
+		(
+			@id_medico,
+			@id_especialidad
+		)
+	else
+		RAISERROR('ERROR EN CREAR RELACION',5,5,'')
+END
+go
 -----MODIFIES----------------------
 
 
 create or alter procedure datos_paciente.modificarFotoPaciente
 (
-	@id_historia_clinica int,
+	@nro_documento int,
     @dir_foto_perfil varchar(100),
 	@usuario_actualizacion varchar(30)
 )
@@ -515,15 +546,15 @@ begin
 	
 	update datos_paciente.Paciente
 	set dir_foto_perfil = @dir_foto_perfil
-	where id_historia_clinica = @id_historia_clinica
+	where nro_documento = @nro_documento
 	
 	update datos_paciente.Paciente
 	set usuario_actualizacion = @usuario_actualizacion 
-	where id_historia_clinica = @id_historia_clinica
+	where nro_documento = @nro_documento
 
 	update datos_paciente.Paciente
 	set fecha_actualizacion = convert(date,getdate())
-	where id_historia_clinica = @id_historia_clinica
+	where nro_documento = @nro_documento
 end
 go
 
@@ -531,7 +562,7 @@ go
 
 create or alter procedure datos_paciente.modificarTelPaciente
 (
-	@id_historia_clinica int,
+	@nro_documento int,
     @tel varchar(15),
 	@tipo varchar(11),
 	@usuario_actualizacion varchar(20)
@@ -543,29 +574,29 @@ begin
 	begin
 		update datos_paciente.Paciente
 		set tel_fijo = @tel
-		where id_historia_clinica = @id_historia_clinica
+		where nro_documento = @nro_documento
 	end
 
 	if(@tipo = 'alternativo' collate SQL_Latin1_General_CP1_CI_AS)
 	begin
 		update datos_paciente.Paciente
 		set tel_alternativo = @tel
-		where id_historia_clinica = @id_historia_clinica
+		where nro_documento = @nro_documento
 	end
 
 	if(@tipo = 'laboral' collate SQL_Latin1_General_CP1_CI_AS)
 	begin
 		update datos_paciente.Paciente
 		set tel_laboral = @tel
-		where id_historia_clinica = @id_historia_clinica
+		where nro_documento = @nro_documento
 	end
 	update datos_paciente.Paciente
 	set usuario_actualizacion = @usuario_actualizacion 
-	where id_historia_clinica = @id_historia_clinica
+	where nro_documento = @nro_documento
 
 	update datos_paciente.Paciente
 	set fecha_actualizacion = convert(date,getdate())
-	where id_historia_clinica = @id_historia_clinica
+	where nro_documento = @nro_documento
 end
 go
 
@@ -597,11 +628,12 @@ create or alter procedure datos_paciente.modificarDomicilio
     @pais varchar(15),
     @provincia varchar(20),
     @localidad varchar(20),
-    @id_paciente int
+    @nro_documento int
 )
 as
 begin
-
+	declare @id_paciente int
+	set @id_paciente= (select id_historia_clinica from datos_paciente.Paciente where nro_documento = @nro_documento)
 	update datos_paciente.Domicilio
 	set calle = @calle,
 		numero = @numero,
@@ -619,7 +651,7 @@ go
 
 create or alter procedure comercial.modificarPrestador
 (
-	@id_prestador int,
+	@nombre_prestador int,
     @estado bit 
 )
 as
@@ -630,7 +662,7 @@ begin
 	begin
 			update comercial.Prestador
 			set borrado = @estado
-			where id_prestador = @id_prestador
+			where nombre_prestador=ltrim(rtrim(@nombre_prestador))
 	end
 	else 
 		RAISERROR('ERROR MODIFICACION NO REALIZADA',5,5,'')
@@ -657,36 +689,28 @@ go
 
 create or alter procedure comercial.modificarCobertura
 (   
-	@id_prestador int,
-    @id_plan int,
-    @id_paciente int
+	@nombre_prestador varchar(50),
+    @nombre_plan varchar(50),
+    @nro_documento int
 )
 as
 begin
-
-	if(@id_plan in (select id_plan from comercial.Plan_Prestador where borrado=0) and
-		@id_prestador in (select id_prestador from comercial.Plan_Prestador  where borrado=0))
+	declare @id_plan int,
+			@id_prestador int,
+			@id_paciente int
+	set @id_plan= (select id_plan from comercial.Plan_Prestador where nombre_plan=@nombre_plan and  borrado=0)
+	set @id_prestador = (select id_prestador from comercial.Prestador  where nombre_prestador=@nombre_prestador and borrado=0)
+	set @id_paciente= (select id_historia_clinica from datos_paciente.Paciente where nro_documento = @nro_documento)
+	
+	if(@id_plan is not null and @id_prestador is not null)
 	begin
 		update datos_paciente.Cobertura
-		set id_plan = @id_plan
+		set id_plan = @id_plan,
+			id_prestador=@id_prestador
 		where id_paciente = @id_paciente
 	end
 	else 
 		RAISERROR('ERROR MODIFICACION NO REALIZADA',5,5,'')
-end
-go
-
-
-create or alter procedure servicio.modificarAutorizarEstudio
-(   
-	@id_estudio int,
-    @autorizado varchar(10)
-)
-as
-begin
-		update servicio.Estudio
-		set autorizado = @autorizado
-		where id_estudio = @id_estudio
 end
 go
 
@@ -714,61 +738,16 @@ end
 go
 
 
-create or alter procedure servicio.modificarTipoTurno
-(   
-	@id_tipo_turno int,
-    @nombre_tipo_turno varchar(10)-- check(nombre_tipo_turno in ('presencial', 'virtual'))
-)
-as
-begin
-
-	if(@nombre_tipo_turno = 'presencial' collate Latin1_General_100_CI_AS or
-		@nombre_tipo_turno = 'virtual' collate Latin1_General_100_CI_AS)
-	begin
-		update servicio.Tipo_turno
-		set nombre_tipo_turno = @nombre_tipo_turno
-		where id_tipo_turno = @id_tipo_turno
-	end
-	else 
-		RAISERROR('ERROR MODIFICACION NO REALIZADA',5,5,'')
-end
-go
-
-
-
-create or alter procedure personal.modificarEspecialidadMedico
-(   
-	@id_medico int,
-    @id_especialidad int
-   -- constraint fk_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad)
-)
-as
-begin
-
-	if(@id_especialidad in (select id_especialidad from personal.Especialidad))
-	begin
-		update personal.Medico
-		set id_especialidad = @id_especialidad
-		where id_medico = @id_medico
-	end
-	else 
-		RAISERROR('ERROR MODIFICACION NO REALIZADA',5,5,'')
-end
-go
-
-
-
 create or alter procedure servicio.modificarDireccionSede
 (   
-	@id_sede int,
+	@nombre_sede varchar(50),
     @direccion_sede varchar(30)
 )
 as
 begin
-
 		update servicio.Sede
 		set direccion_sede = @direccion_sede
-		where id_sede = @id_sede
+		where nombre_sede = ltrim(rtrim(@nombre_sede))
 end
 go
 
@@ -778,11 +757,6 @@ create or alter procedure servicio.modificarReservaTipoTurno
 (   
 	@id_turno int,
     @id_tipo_turno int
-  --  constraint fk_turno_medico foreign key (id_medico) references personal.Medico(id_medico),
-  --  constraint fk_turno_sede foreign key (id_sede) references servicio.Sede(id_sede),
- --   constraint fk_turno_estado foreign key (id_estado_turno) references servicio.Estado_turno (id_estado),
-   -- constraint fk_turno_tipo foreign key (id_tipo_turno) references servicio.Tipo_turno(id_tipo_turno),
-   -- constraint fk_turno_paciente foreign key (id_paciente) references datos_paciente.Paciente(id_historia_clinica)
 )
 as
 begin
@@ -799,7 +773,9 @@ go
 
 create or alter procedure servicio.modificarReservaFechaHoraTurno
 (   
-	@id_turno int,
+	@nro_documento int,
+	@fecha_anterior date,
+	@hora_anterior time(0),
     @fecha date,
     @hora time(0)
 )
@@ -807,107 +783,104 @@ as
 begin
 	declare @dia varchar(10); 
 	declare @hora_inicio time(0);
+	declare @hora_fin time(0)
 	declare @id_sede int;
 	declare @id_medico int;
 	declare @id_especialidad int;
+	declare @id_turno int
+	declare @id_paciente int
+	declare @id_tipo_turno int
+
+	--obtengo los datos del turno que tenia
+	set @id_paciente =(select id_historia_clinica from datos_paciente.Paciente where nro_documento=@nro_documento and borrado=0)
+	set @id_turno = (select id_turno from servicio.Reserva_de_turno_medico where fecha=@fecha_anterior and hora=@hora_anterior and borrado=0 and id_paciente=@id_paciente)
+	set @id_medico=(select id_medico from servicio.Reserva_de_turno_medico where id_turno=@id_turno and borrado=0)
+	set @id_especialidad=(select id_especialidad from servicio.Reserva_de_turno_medico where id_turno=@id_turno and borrado=0)
+	set @id_sede =(select id_sede from servicio.Reserva_de_turno_medico where id_turno=@id_turno and borrado=0)
+	set @id_tipo_turno =(select id_tipo_turno from servicio.Reserva_de_turno_medico where id_turno=@id_turno and borrado=0)
+	
 		
-		--obtengo los datos del turno que tenia
-	set @id_sede=(select id_sede from servicio.Reserva_de_turno_medico where id_turno=@id_turno)
-	set @id_medico=(select id_medico from servicio.Reserva_de_turno_medico where id_turno=@id_turno)
-	set @id_especialidad=(select id_especialidad from servicio.Reserva_de_turno_medico where id_turno=@id_turno)
 	
 	if(@id_sede is not null and @id_medico is not null and @id_especialidad is not null)
 	begin
 		set @dia = case 
-		when datepart(weekday, @fecha) = 1 then 'domingo'
-		when datepart(weekday, @fecha) = 2 then 'lunes'
-		when datepart(weekday, @fecha) = 3 then 'martes'
-		when datepart(weekday, @fecha) = 4 then 'miercoles'
-		when datepart(weekday, @fecha) = 5 then 'jueves'
-		when datepart(weekday, @fecha) = 6 then 'viernes'
-		when datepart(weekday, @fecha) = 7 then 'sabado'
+		when datepart(weekday, @fecha) = 1 then 'lunes'
+		when datepart(weekday, @fecha) = 2 then 'martes'
+		when datepart(weekday, @fecha) = 3 then 'miercoles'
+		when datepart(weekday, @fecha) = 4 then 'jueves'
+		when datepart(weekday, @fecha) = 5 then 'viernes'
+		when datepart(weekday, @fecha) = 6 then 'sabado'
+		when datepart(weekday, @fecha) = 7 then 'domingo'
 		end
 						
-		select @hora_inicio = (select horario_inicio from servicio.Dias_por_sede d inner join personal.Medico m on d.id_medico=m.id_medico
-			where d.id_medico=@id_medico and id_sede=@id_sede and dia=@dia and m.id_especialidad= @id_especialidad ) --busca horario de inicio de atencion
+		set @hora_inicio = (select horario_inicio from servicio.Dias_por_sede 
+							where id_medico=@id_medico and id_sede=@id_sede and 
+								dia=ltrim(rtrim(@dia)) and id_especialidad=@id_especialidad) --obtengo horario inicio atencion
+		set @hora_fin = (select horario_fin from servicio.Dias_por_sede 
+							where id_medico=@id_medico and id_sede=@id_sede and 
+								dia=ltrim(rtrim(@dia)) and id_especialidad=@id_especialidad) --obtengo horario de fin de atencion
 
-		if (@hora_inicio is not null and DATEDIFF(minute,@hora_inicio, @hora)%15=0)--verifico que el horario sea multiplo de 15 minutos y que  el medico atienda ese dia en esa sede esa especialidad
+		if (@hora_inicio is not null and @hora_fin is not null and 
+		@hora<@hora_fin and @hora>@hora_inicio and @fecha>(convert(date,getdate()))  
+		and DATEDIFF(minute,@hora_inicio, @hora)%15=0)--verifico que el horario sea multiplo de 15 minutos,que exista lo obtenido
 		begin 
-			if(not exists(select 1 from servicio.Reserva_de_turno_medico t inner join servicio.Estado_turno e on t.id_estado_turno=e.id_estado
-							where t.fecha=@fecha and t.hora=@hora and t.id_medico=@id_medico and t.id_sede=@id_sede and e.nombre_estado='reservado'and t.borrado=0))--verifico que no este asignado el turno
-			begin
+			if(	
+			@id_tipo_turno is not null and
+			@id_paciente is not null)
+			begin 
+				if(not exists(select 1 from servicio.Reserva_de_turno_medico t inner join servicio.Estado_turno e on t.id_estado_turno=e.id_estado
+						where t.fecha=@fecha and t.hora=@hora and t.id_medico=@id_medico and 
+								t.id_sede=@id_sede and t.id_especialidad=@id_especialidad and 
+								e.nombre_estado='reservado' and t.borrado=0))--verifico que no este asignado el turno
+				
+				begin
 				update servicio.Reserva_de_turno_medico
-				set hora=@hora
+				set hora=@hora,
+					fecha=@fecha,
+					borrado=0
 				where id_turno=@id_turno
-
-				update servicio.Reserva_de_turno_medico
-				set fecha=@fecha
-				where id_turno=@id_turno
+				end
+				else
+					RAISERROR('Error fecha y hora no disponible',10,5,'')
 			end
 			else
-				RAISERROR('turno no disponible',10,5,'')
+				RAISERROR('error nro documento',10,5,'')
 		end
 		else
-			RAISERROR('FECHA U HORA INCORRECTOS',10,5,'')
+		   RAISERROR('fecha u hora incorrectos',10,5,'')
 	end
 	else 
-		RAISERROR('NO EXISTE EL TURNO',10,5,'')
+		RAISERROR('medico, sede o especialidad inexistente',10,5,'')
 end
 go
 
 
 create or alter procedure servicio.modificarReservaEstadoTurno
 (   
-	@id_turno int,
-	@id_estado_turno int
-   -- constraint fk_turno_medico foreign key (id_medico) references personal.Medico(id_medico),
-   -- constraint fk_turno_sede foreign key (id_sede) references servicio.Sede(id_sede),
-   -- constraint fk_turno_estado foreign key (id_estado_turno) references servicio.Estado_turno (id_estado),
-   -- constraint fk_turno_tipo foreign key (id_tipo_turno) references servicio.Tipo_turno(id_tipo_turno),
-   -- constraint fk_turno_paciente foreign key (id_paciente) references datos_paciente.Paciente(id_historia_clinica)
+	@fecha date,
+	@hora time(0),
+	@nro_documento int,
+	@nombre_estado varchar(10)
 )
 as
 begin
-
-	if(@id_estado_turno in (select id_estado from servicio.Estado_turno))
+	declare @id_estado_turno int
+	declare @id_paciente int
+		set @id_paciente = (select id_historia_clinica 
+							from datos_paciente.Paciente
+							where nro_documento = @nro_documento)
+	set @id_estado_turno = (select id_estado from servicio.Estado_turno where nombre_estado=@nombre_estado)
+	update servicio.Reserva_de_turno_medico
+	set id_estado_turno = @id_estado_turno
+	where fecha=@fecha and hora=@hora and id_paciente=@id_paciente
+	if(@nombre_estado='cancelado')
 	begin
 		update servicio.Reserva_de_turno_medico
-		set id_estado_turno = @id_estado_turno
-		where id_turno = @id_turno
+		set borrado=1
+		where fecha=@fecha and hora=@hora and id_paciente=@id_paciente
 	end
-	 RAISERROR('ERROR NO SE MODIFICO',5,5,'')
 end
 go
-
-
-create or alter procedure servicio.modificarReservaMedicoSede
-(   
-	@id_turno int,
-	@id_medico int,
-    @id_sede int
-   -- constraint fk_turno_medico foreign key (id_medico) references personal.Medico(id_medico),
-   -- constraint fk_turno_sede foreign key (id_sede) references servicio.Sede(id_sede),
-   -- constraint fk_turno_estado foreign key (id_estado_turno) references servicio.Estado_turno (id_estado),
-   -- constraint fk_turno_tipo foreign key (id_tipo_turno) references servicio.Tipo_turno(id_tipo_turno),
-   -- constraint fk_turno_paciente foreign key (id_paciente) references datos_paciente.Paciente(id_historia_clinica)
-)
-as
-begin
-
-	if(@id_medico in (select id_medico from personal.Medico where borrado=0) and
-		@id_sede in (select id_sede from servicio.Sede where borrado=0))
-	begin
-		update servicio.Reserva_de_turno_medico
-		set id_medico = @id_medico,
-			id_sede = @id_sede
-		where id_turno = @id_turno
-	end
-	else
-	 RAISERROR('ERROR NO SE MODIFICO',5,5,'')
-end
-go
-
-
 
 
 ------DELETES--------------
@@ -916,18 +889,22 @@ go
 
 create or alter procedure datos_paciente.eliminarPaciente -- NO VOY A BORRAR FISICAMENTE LOS PACIENTES, UTILIZAMOS BORRADO LOGICO con el campo borrado
 (   
-	@id_paciente int
+	@nro_documento int
 )
 as
 begin
+	declare @id_paciente int,
+			@id_estado int
+	set @id_paciente=(select id_historia_clinica from datos_paciente.Paciente where nro_documento=@nro_documento)
+	set @id_estado =(select id_estado from servicio.Estado_turno where nombre_estado='cancelado')
 	
-
 	update datos_paciente.Paciente
-	set borrado=1   -- 1 indica que el paciente esta borrado
-	where id_historia_clinica =@id_paciente
+	set borrado=1							 -- 1 indica que el paciente esta borrado
+	where id_historia_clinica=@id_paciente
 
 	update servicio.Reserva_de_turno_medico  --borra los turnos que tenia asignados
-	set borrado=1
+	set borrado=1,
+		id_estado_turno=@id_estado	
 	where id_paciente=@id_paciente
 end
 go
@@ -940,19 +917,24 @@ deben ser anulados todos los turnos de pacientes que se encuentren vinculados a 
 pasar a estado disponible.*/
 create or alter procedure comercial.eliminarPrestador   --utilizamos borrado logico 
 (   
-	@id_prestador int
+	@nombre_prestador int
 )
 as
 begin
-
+	declare @id_prestador int,
+			@id_estado int
+	set @id_estado =(select id_estado from servicio.Estado_turno where nombre_estado='cancelado')
+	set @id_prestador = (select id_prestador 
+						from comercial.Prestador
+						where nombre_prestador=@nombre_prestador)
 	update comercial.Prestador
 	set borrado=1                  --borrado logico
-	where id_prestador = @id_prestador
+	where id_prestador=@id_prestador
 
 	update servicio.Reserva_de_turno_medico                        
-	set borrado=1									--borra los turnos asignados a ese prestador de forma logica y se pueden utilizar para otro paciente
+	set borrado=1,--borra los turnos asignados a ese prestador de forma logica y se pueden utilizar para otro paciente
+		id_estado_turno=@id_estado
 	where id_paciente in(select id_paciente from datos_paciente.Cobertura where id_prestador=@id_prestador)
-
 end
 go
 
@@ -960,15 +942,25 @@ go
 
 create or alter procedure comercial.eliminarPlan  --borrado logico
 (   
-	@id_plan int
+	@nombre_plan varchar(50)
 )
 as
 begin
 
+	declare @id_plan int,
+			@id_estado int
+	set @id_estado =(select id_estado from servicio.Estado_turno where nombre_estado='cancelado')
+	set @id_plan = (select id_plan 
+						from comercial.Plan_Prestador
+						where nombre_plan =@nombre_plan )
 	update comercial.Plan_Prestador
-	set borrado=1
-	where id_plan = @id_plan
+	set borrado=1                  --borrado logico
+	where id_plan=@id_plan
 
+	update servicio.Reserva_de_turno_medico                        
+	set borrado=1,--borra los turnos asignados a ese prestador de forma logica y se pueden utilizar para otro paciente
+		id_estado_turno=@id_estado
+	where id_paciente in(select id_paciente from datos_paciente.Cobertura where id_plan=@id_plan)
 end
 go
 
@@ -992,14 +984,20 @@ go
 
 create or alter procedure servicio.eliminarTurno  --borrado logico 
 (   
-	@id_turno int
+	@fecha date,
+	@hora time(0),
+	@nro_documento int
 )
 as
 begin
-
+	declare @id_paciente int,
+			@id_estado int
+	set @id_paciente=(select id_historia_clinica from datos_paciente.Paciente where nro_documento=@nro_documento)
+	set @id_estado =(select id_estado from servicio.Estado_turno where nombre_estado='cancelado')
 	update servicio.Reserva_de_turno_medico
-	set borrado=1
-	where id_turno = @id_turno
+	set borrado=1,
+		id_estado_turno=@id_estado
+	where fecha=@fecha and hora=@hora and id_paciente=@id_paciente
 
 end
 go
@@ -1053,7 +1051,7 @@ go
 
 
 
-create or alter procedure eliminarEstadoTurno
+create or alter procedure servicio.eliminarEstadoTurno
 (   
 	@id_estado int
 )
@@ -1068,9 +1066,25 @@ begin
 
 end
 go
-
-
-
+create or alter proc servicio.eliminarDiasporsede(
+	@nro_colegiado int,
+    @nombre_sede varchar(50),
+	@nombre_especialidad varchar(50),
+    @dia varchar(10)
+)
+as
+begin
+		declare @id_medico int,
+				@id_sede int,
+				@id_especialidad int
+		set @id_medico=(select id_medico from personal.Medico where nro_colegiado=@nro_colegiado and borrado=0)
+		set @id_especialidad=(select id_especialidad from personal.Especialidad where nombre_especialidad=ltrim(rtrim(@nombre_especialidad)) and borrado=0)
+		set @id_sede =(select id_sede from servicio.Sede where nombre_sede=ltrim(rtrim(@nombre_sede)) and borrado=0)
+		
+		delete from servicio.Dias_por_sede
+		where id_medico=@id_medico and id_especialidad=@id_especialidad and dia=ltrim(rtrim(@dia))
+end
+go
 
 create or alter procedure personal.eliminarEspecialidad  --borrado logico
 (   
@@ -1106,8 +1120,14 @@ begin
 	set borrado=1
 	where nro_colegiado=@nro_colegiado;
 
-	update servicio.Reserva_de_turno_medico 
+	update servicio.Reserva_de_turno_medico   --borrado logico de turnos
 	set borrado=1
+	where id_medico=(select id_medico from personal.Medico where nro_colegiado=@nro_colegiado)
+
+	delete from personal.medico_especialidad                                             --borramos la relacion medico_especialidad
+	where id_medico=(select id_medico from personal.Medico where nro_colegiado=@nro_colegiado)
+	
+	delete from servicio.Dias_por_sede														--borramos dias por sede
 	where id_medico=(select id_medico from personal.Medico where nro_colegiado=@nro_colegiado)
 	
 end
@@ -1126,24 +1146,27 @@ begin
 	update servicio.Sede
 	set borrado=1
 	where id_sede=@id_sede
+
+	delete from servicio.Dias_por_sede														--borramos dias por sede
+	where id_sede=@id_sede
 end
 go
 
 
-create or alter procedure eliminarCobertura
+create or alter procedure datos_paciente.eliminarCoberturaPaciente
 (   
-	@id_cobertura int
+	@nro_documento int
 )
 as
 begin
 
 	delete datos_paciente.Cobertura
-	where id_cobertura = @id_cobertura
+	where id_paciente in(select id_historia_clinica from datos_paciente.Paciente where nro_documento=@nro_documento)
 
 end
 go
 
-create or alter proc autorizar_estudio(@estudio varchar(max),@plan varchar(max),@nro_documento int)
+create or alter proc servicio.autorizar_estudio(@estudio varchar(max),@plan varchar(max),@nro_documento int)
 as
 begin
 	declare @porcentaje_cobertura varchar(10)

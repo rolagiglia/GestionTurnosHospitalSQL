@@ -104,13 +104,9 @@ go
 --insertarMedico --eliminarmedico
 exec personal.insertarMedico 'alberto','gonzalez', 'OBSTETRICIA', 43256 --nombre_medico,apellido_medico,nombre_especialidad,nro_colegiado
 go
-exec personal.insertarMedico 'alberto','gonzalez', 'OBSTETRICIA', 43256    -- no permite insertar dos veces la misma matricula de medico PARA LA MISMA ESPECIALIDAD
+exec personal.insertarMedico 'alberto','gonzalez', 'OBSTETRICIA', 43256    -- no permite insertar dos veces la misma matricula de medico 
 go
-exec personal.insertarMedico 'alberto','PEREZ', 'TRAUMATO', 43256    --  el apellido es incorrecto para esa matricula
-go
-exec personal.insertarMedico 'alberto','gonzalez', 'TRAUMATO', 43256   --carga mismo medico con otra especialidad
-go
-exec personal.insertarMedico 'alberto','gonzalez', 'FONO', 43256    -- la especialidad no existe
+exec personal.insertarMedico 'alberto','gonzalez', 'FONO', 1111    -- la especialidad no existe
 go
 --eliminarmedico
 exec personal.eliminarMedico 43256 --borrado logico de medico y de todo sus turnos
@@ -128,44 +124,58 @@ go
 --eliminacion logica
 exec servicio.eliminarSede 'Trinidad de Ramos Mejia'
 go
-select * from servicio.Sede
 --vuelvo a dar de alta
-exec servicio.insertarSede 'Trinidad de Ramos Mejia', 'juan de araoz', 'Ramos Mejia', 'Bs As'  --no inserta sedes duplicadas
+exec servicio.insertarSede 'Trinidad de Ramos Mejia', 'juan de araoz', 'Ramos Mejia', 'Bs As'  
 go
 
 
 --insertarDiasporsede
 exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia', 'obstetricia', 'martes', '15:00','18:00' -- nro_colegiado , sede,especialidad, dia  'lunes','marte','miercoles','jueves','viernes','sabado', horario_inicio,horario_fin
 go
-exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia', 'obstetricia', 'martes', '15:00','23:00' --fuera de rango horario
+exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia', 'obstetricia', 'viernes', '15:00','23:00' --fuera de rango horario
 go
-exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia', 'TRAUMATO', 'martes', '15:00','12:00' -- rango horario INCORRECTO
+exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia', 'TRAUMATO', 'viernes', '15:00','12:00' -- error rango horario incorrecto
 go
-exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia',  'obstetricia', 'martes', '11:00','18:00' -- se superpone el horario
+exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia',  'TRAUMATO', 'martes', '11:00','14:00' -- error el medico ya atiende ese dia
 go
-exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia',  'obstetricia', 'martes', '11:00','14:00' -- correcto
-go
-exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia',  'obstetricia', 'martes', '18:00','19:00' -- correcto
+exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia',  'obstetricia', 'jueves', '18:00','19:00' -- correcto
 go
 
---eliminar dias por sede
+--eliminar dias por sede 
+exec servicio.eliminarDiasporsede 43256,'Trinidad de Ramos Mejia','obstetricia','martes'  --elimina la atencion de un medico en una sede en una especialidad en un dia 
+
+--insertar reserva turno
+
+exec servicio.insertarReservaTurno '25/07/2024','18:15',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
+go				
+exec servicio.insertarReservaTurno '25/07/2024','18:15',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
+go	 --no permite duplicados
+exec servicio.insertarReservaTurno '25/07/2024','18:20',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
+go --no permite turnos cada menos de 15 minutos
+exec servicio.insertarReservaTurno '25/07/2024','22:00',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
+go --no permite turnos fuera de horario
+
+--modidicarfechahorareserva turno
+exec servicio.modificarReservaFechaHoraTurno 33333333,'25/07/2024','18:15','08/08/2024','18:30' --fecha anterior.hora anterior, fecha nueva, hora nueva
+go
+
+--insertar relacion medico especialidad
+exec personal.insertar_relacion_medico_especialidad 43256,'TRAUMATO'
 
 
-exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,1,2,1 --fecha, hora, id_medico,id_especialidad,id_sede, id_estado de turno,id_tipo_turno,id_paciente 
-go																
-exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,1,2,1 --no permite duplicados
-exec servicio.insertarReservaTurno '28/06/2024','08:40',1,5,1,1,2,1 --no permite turnos cada menos de 15 minutos
+--modifico el estado del turno
+exec servicio.modificarReservaEstadoTurno '08/08/2024','18:30',33333333,'cancelado'
+go
 
-exec servicio.modificarReservaEstadoTurno 1,4 -- id_turno, id_estado_turno  modifico el turno a cancelado 
+--ahora puedo reservar ese turno cancelado
+exec servicio.insertarReservaTurno '08/08/2024','18:30',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 
+go	  
 
-exec servicio.insertarReservaTurno '28/06/2024','08:30',1,1,1,1,2,1  --ahora puedo reservar ese turno cancelado
+--modifica foto y registra usuario que modifico
+exec datos_paciente.modificarFotoPaciente 1,'nuevadirecciondefoto','usuario_administracion'  
+go
 
-exec datos_paciente.modificarFotoPaciente 1,'nuevadirecciondefoto','usuario_medico'  --modifica foto y registra usuario
+exec datos_paciente.modificarTelPaciente 33333333,'09090909', 'fijo','usuario_admin' --dni, telefono,tipo de telefono, usuario que actualiza
+go
 
-select * from servicio.Reserva_de_turno_medico
-select * from servicio.Dias_por_sede
-
-exec servicio.modificarReservaFechaHoraTurno 3,'2024-07-05','08:30' --@id_turno @fecha @hora  --modifico la fecha y horario del turno
-
-exec servicio.modificarReservaFechaHoraTurno 3,'2024-07-04','08:30'    -- NO LO MODIFCA PORQUE ES UN DIA QUE ESE MEDICO NO ATIENDE
 

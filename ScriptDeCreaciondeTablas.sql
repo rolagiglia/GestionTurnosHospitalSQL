@@ -127,7 +127,7 @@ go
 
 create table personal.Especialidad(
 	id_especialidad int primary key identity(1,1),
-    nombre_especialidad varchar(30) not null check(nombre_especialidad<>''),
+    nombre_especialidad varchar(30) not null UNIQUE check(nombre_especialidad<>''),
 	borrado bit default 0
 );
 go
