@@ -329,7 +329,7 @@ create or alter	procedure personal.insertarMedico
 as
 begin
 	declare @id_especialidad int
-	set @id_especialidad = (select id_especialidad from personal.Especialidad where nombre_especialidad=rtrim(rtrim(@nombre_especialidad)) and borrado=0)
+	set @id_especialidad = (select id_especialidad from personal.Especialidad where nombre_especialidad=ltrim(rtrim(@nombre_especialidad)) and borrado=0)
 	declare @id_medico int
 
 	if(@id_especialidad is not null ) --la especialidad debe existir
@@ -413,7 +413,7 @@ begin
 			and @horario_fin>@horario_inicio 
 			and @id_medico not in(select id_medico 
 									from servicio.Dias_por_sede 
-									where id_sede=@id_sede and dia=ltrim(rtrim(@dia))))  --que el medico no atienda ese dia en esa sede
+									where id_sede=@id_sede and dia=lower(ltrim(rtrim(@dia)))))  --que el medico no atienda ese dia en esa sede
 		begin
 
 			insert into servicio.Dias_por_sede values 
@@ -918,9 +918,9 @@ end
 go
 
 
-/*Los prestadores est·n conformador por Obras Sociales y Prepagas con las cuales se establece una
+/*Los prestadores est√°n conformador por Obras Sociales y Prepagas con las cuales se establece una
 alianza comercial. Dicha alianza puede finalizar en cualquier momento, por lo cual debe poder ser
-actualizable de forma inmediata si el contrato no est· vigente. En caso de no estar vigente el contrato,
+actualizable de forma inmediata si el contrato no est√° vigente. En caso de no estar vigente el contrato,
 deben ser anulados todos los turnos de pacientes que se encuentren vinculados a esa prestadora y
 pasar a estado disponible.*/
 create or alter procedure comercial.eliminarPrestador   --utilizamos borrado logico 
