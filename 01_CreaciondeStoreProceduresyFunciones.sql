@@ -107,7 +107,7 @@ create or alter procedure datos_paciente.insertarDomicilio
     @provincia varchar(20),
     @localidad varchar(20),
     @dni_paciente int
-    --CONSTRAINT fk_paciente_domicilio foreign key  (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica) 
+    
 )
 as
 begin
@@ -158,7 +158,7 @@ create or alter	procedure comercial.insertarPlanPrestador
 (                
     @nombre_prestador varchar(50),
     @nombre_plan varchar (50)
-    --CONSTRAINT fk_prestador_plan foreign key (id_prestador) references comercial.Prestador(id_prestador),
+    
 )
 as
 begin
@@ -196,8 +196,7 @@ create or alter	procedure datos_paciente.insertarCobertura
     @nombre_prestador varchar(50),
     @nombre_plan varchar(50),
     @nro_documento int
-    --CONSTRAINT fk_prestador_cobertura foreign key  (id_prestador, id_plan) REFERENCES comercial.Plan_Prestador(id_plan,id_prestador),
-    --CONSTRAINT fk_paciente_cobertura foreign key  (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)     
+        
 )
 as
 begin
@@ -324,7 +323,7 @@ create or alter	procedure personal.insertarMedico
     @apellido_medico varchar(50),
     @nombre_especialidad varchar(50),
 	@nro_colegiado int
-    --constraint fk_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad)
+    
 )
 as
 begin
