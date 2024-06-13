@@ -1,7 +1,8 @@
 /* Script CREACION DE SP de insercion, modificacion y eliminacion 
 
 MATERIA BBDDA COMISION 5600 
-GRUPO NRO 16 
+GRUPO NRO 16 fauto
+
 ALUMNOS:
 	ARAGON, RODRIGO EZEQUIEL 43509985
 	LA GIGLIA RODRIGO ARIEL DNI 33334248
@@ -233,7 +234,7 @@ create or alter	procedure servicio.insertarEstudio
 (   
 	@nro_documento int,
     @fecha_estudio date,
-    @nombre_estudio nvarchar(max),
+    @nombre_estudio nvarchar(200),
     @autorizado varchar(10),
 	@imagen_resultado varchar(100),
 	@documento_resultado varchar(100)
