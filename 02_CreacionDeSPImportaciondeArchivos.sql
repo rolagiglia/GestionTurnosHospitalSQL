@@ -721,7 +721,7 @@ begin
 		area nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
 		estudio nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
 		prestador nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		plan_ nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		plan_ nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
 		[Porcentaje Cobertura] int,
 		costo decimal(10,2),
 		[Requiere autorizacion] bit
@@ -734,10 +734,10 @@ begin
 	cross apply openjson(bulkcolumn)
 	with (
 			
-			area nvarchar(max) ''$.Area'',
-			estudio nvarchar(max) ''$.Estudio'',
-			prestador nvarchar(max) ''$.Prestador'',
-			plan_ nvarchar(max) ''$.Plan'',
+			area nvarchar(50) ''$.Area'',
+			estudio nvarchar(100) ''$.Estudio'',
+			prestador nvarchar(50) ''$.Prestador'',
+			plan_ nvarchar(100) ''$.Plan'',
 			[Porcentaje Cobertura] int,
 			costo int ''$.Costo'',
 			[Requiere autorizacion] bit 
