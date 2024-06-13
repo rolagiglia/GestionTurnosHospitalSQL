@@ -1174,7 +1174,7 @@ begin
 end
 go
 
-create or alter proc servicio.autorizar_estudio(@estudio varchar(max),@plan varchar(max),@nro_documento int)
+create or alter proc servicio.autorizar_estudio(@estudio varchar(200),@plan varchar(50),@nro_documento int)
 as
 begin
 	declare @porcentaje_cobertura varchar(10)
