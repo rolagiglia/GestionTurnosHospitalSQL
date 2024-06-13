@@ -104,7 +104,7 @@ go
 create table servicio.Estudio(
 	id_estudio int primary key identity(1,1),
     fecha_estudio date not null,
-    nombre_estudio nvarchar(max) not null check(nombre_estudio<>''),
+    nombre_estudio nvarchar(200) not null check(nombre_estudio<>''),
     autorizado varchar(20) default 'pendiente',
 	costo int default null,
 	id_paciente int,
@@ -197,10 +197,10 @@ go
 
 create table servicio.autorizacion_de_estudio (
 		id int primary key identity(1,1),
-		area nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		estudio nvarchar(max)COLLATE SQL_Latin1_General_CP1_CI_AS,
-		prestador nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		plan_ nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		area nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		estudio nvarchar(200)COLLATE SQL_Latin1_General_CP1_CI_AS,
+		prestador nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		plan_ nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
 		[Porcentaje Cobertura] int,
 		costo decimal(10,2),
 		[Requiere autorizacion] bit
