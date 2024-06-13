@@ -23,7 +23,7 @@ BEGIN
     DECLARE @startPos INT
     DECLARE @ultimosNumeros NVARCHAR(100) = ''
 
-    -- Bucle para encontrar la posici�n del �ltimo n�mero de derecha a izquierda
+    -- Bucle para encontrar la posición del último número de derecha a izquierda
     WHILE @pos > 0
     BEGIN
         IF SUBSTRING(@cadena, @pos, 1) LIKE '[0-9]'
@@ -34,23 +34,23 @@ BEGIN
         SET @pos = @pos - 1
     END
 
-    -- Si no se encontr� ning�n n�mero, devolver cadena vac�a
+    -- Si no se encontró ningún número, devolver cadena vacía
     IF @posUltimoNumero = -1
         RETURN ''
 
-    -- Inicializar la posici�n de inicio con la posici�n del �ltimo n�mero
+    -- Inicializar la posición de inicio con la posición del último número
     SET @startPos = @posUltimoNumero
 
-    -- Bucle para encontrar la posici�n del inicio de los n�meros consecutivos
+    -- Bucle para encontrar la posición del inicio de los números consecutivos
     WHILE @startPos > 0 AND SUBSTRING(@cadena, @startPos, 1) LIKE '[0-9]'
     BEGIN
         SET @startPos = @startPos - 1
     END
 
-    -- Ajusta la posici�n inicial para que apunte al primer d�gito del grupo
+    -- Ajusta la posición inicial para que apunte al primer dígito del grupo
     SET @startPos = @startPos + 1
 
-    -- Extraer los n�meros
+    -- Extraer los números
     DECLARE @longitud INT = @posUltimoNumero - @startPos + 1
     SET @ultimosNumeros = SUBSTRING(@cadena, @startPos, @longitud)
 
@@ -94,153 +94,153 @@ begin
 	exec sp_executesql @sql
 
 	---Los siguientes updates son para poder arreglar caracteres especiales, como vocales con tilde. Solamente no funciona cuando hay
-	---dos caracteres especiales juntos, por ejemplo, Ord��ez. No he encontrado manera de solucionarlo
+	---dos caracteres especiales juntos, por ejemplo, Ordóñez. No he encontrado manera de solucionarlo
 	---Pense en usar constains en vez de like pero requiere configurar el motor de base de datos y no es conveniente
 	update #PacientesTemporal
-	set Nombre = REPLACE (Nombre,'á', '�'),
-		Apellido = REPLACE (Apellido,'á', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'á', '�'),
-		localidad = REPLACE(localidad,'á', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'á', '�')
-	where Nombre like ('%á%') or Apellido like ('%á%') or
-			Nacionalidad like ('%á%') or localidad like ('%á%') or
-			Calle_y_Nro like ('%á%')
+	set Nombre = REPLACE (Nombre,'Ã¡', 'á'),
+		Apellido = REPLACE (Apellido,'Ã¡', 'á'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã¡', 'á'),
+		localidad = REPLACE(localidad,'Ã¡', 'á'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã¡', 'á')
+	where Nombre like ('%Ã¡%') or Apellido like ('%Ã¡%') or
+			Nacionalidad like ('%Ã¡%') or localidad like ('%Ã¡%') or
+			Calle_y_Nro like ('%Ã¡%')
 
 	update #PacientesTemporal
-	set Nombre = replace(nombre,'é','�'),
-		Apellido = REPLACE (Apellido,'é', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'é', '�'),
-		localidad = REPLACE(localidad,'é', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'é', '�')
-	where Nombre like ('%é%') or Apellido like ('%é%') or
-			Nacionalidad like ('%é%') or localidad like ('%é%') or
-			Calle_y_Nro like ('%é%')
+	set Nombre = replace(nombre,'Ã©','é'),
+		Apellido = REPLACE (Apellido,'Ã©', 'é'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã©', 'é'),
+		localidad = REPLACE(localidad,'Ã©', 'é'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã©', 'é')
+	where Nombre like ('%Ã©%') or Apellido like ('%Ã©%') or
+			Nacionalidad like ('%Ã©%') or localidad like ('%Ã©%') or
+			Calle_y_Nro like ('%Ã©%')
 
 	update #PacientesTemporal
-	set Nombre = REPLACE (Nombre,'í', '�'),
-		Apellido = REPLACE (Apellido,'í', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'í', '�'),
-		localidad = REPLACE(localidad,'í', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'í', '�')
-	where Nombre like ('%í%') or Apellido like ('%í%') or
-			Nacionalidad like ('%í%') or localidad like ('%í%') or
-			Calle_y_Nro like ('%í%')
+	set Nombre = REPLACE (Nombre,'Ã­', 'í'),
+		Apellido = REPLACE (Apellido,'Ã­', 'í'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã­', 'í'),
+		localidad = REPLACE(localidad,'Ã­', 'í'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã­', 'í')
+	where Nombre like ('%Ã­%') or Apellido like ('%Ã­%') or
+			Nacionalidad like ('%Ã­%') or localidad like ('%Ã­%') or
+			Calle_y_Nro like ('%Ã­%')
 
 	update #PacientesTemporal
-	set Nombre = REPLACE (Nombre,'ó', '�'),
-		Apellido = REPLACE (Apellido,'ó', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'ó', '�'),
-		localidad = REPLACE(localidad,'ó', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'ó', '�')
-	where Nombre like ('%ó%') or Apellido like ('%ó%') or
-			Nacionalidad like ('%ó%') or localidad like ('%ó%') or
-			Calle_y_Nro like ('%ó%')
+	set Nombre = REPLACE (Nombre,'Ã³', 'ó'),
+		Apellido = REPLACE (Apellido,'Ã³', 'ó'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã³', 'ó'),
+		localidad = REPLACE(localidad,'Ã³', 'ó'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã³', 'ó')
+	where Nombre like ('%Ã³%') or Apellido like ('%Ã³%') or
+			Nacionalidad like ('%Ã³%') or localidad like ('%Ã³%') or
+			Calle_y_Nro like ('%Ã³%')
 
 	update #PacientesTemporal
-	set Nombre = replace(nombre,'ú','�'),
-		Apellido = REPLACE (Apellido,'ú', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'ú', '�'),
-		localidad = REPLACE(localidad,'ú', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'ú', '�')
-	where  Nombre like ('%ú%') or Apellido like ('%ú%') or
-			Nacionalidad like ('%ú%') or
-			localidad like ('%ú%') or Calle_y_Nro like ('%ú%')
-
-
-	update #PacientesTemporal
-	set Nombre = REPLACE (Nombre,'Á', '�'),
-		Apellido = REPLACE (Apellido,'Á', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'Á', '�'),
-		localidad = REPLACE(localidad,'Á', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'Á', '�')
-	where Nombre like ('%Á%') or Apellido like ('%Á%') or
-			Nacionalidad like ('%Á%') or localidad like ('%Á%') or
-			Calle_y_Nro like ('%Á%')
+	set Nombre = replace(nombre,'Ãº','ú'),
+		Apellido = REPLACE (Apellido,'Ãº', 'ú'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ãº', 'ú'),
+		localidad = REPLACE(localidad,'Ãº', 'ú'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ãº', 'ú')
+	where  Nombre like ('%Ãº%') or Apellido like ('%Ãº%') or
+			Nacionalidad like ('%Ãº%') or
+			localidad like ('%Ãº%') or Calle_y_Nro like ('%Ãº%')
 
 
 	update #PacientesTemporal
-	set Nombre = REPLACE (Nombre,'É', '�'),
-		Apellido = REPLACE (Apellido,'É', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'É', '�'),
-		localidad = REPLACE(localidad,'É', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'É', '�')
-	where Nombre like ('%É%') or Apellido like ('%É%') or
-			Nacionalidad like ('%É%') or localidad like ('%É%') or
-			Calle_y_Nro like ('%É%')
+	set Nombre = REPLACE (Nombre,'Ã', 'Á'),
+		Apellido = REPLACE (Apellido,'Ã', 'Á'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã', 'Á'),
+		localidad = REPLACE(localidad,'Ã', 'Á'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã', 'Á')
+	where Nombre like ('%Ã%') or Apellido like ('%Ã%') or
+			Nacionalidad like ('%Ã%') or localidad like ('%Ã%') or
+			Calle_y_Nro like ('%Ã%')
 
 
 	update #PacientesTemporal
-	set Nombre = replace(nombre,'Í','�'),
-		Apellido = REPLACE (Apellido,'Í', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'Í', '�'),
-		localidad = REPLACE(localidad,'Í', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'Í', '�')
-	where Nombre like ('%Í%') or Apellido like ('%Í%') or
-			Nacionalidad like ('%Í%') or localidad like ('%Í%') or
-			Calle_y_Nro like ('%Í%')
+	set Nombre = REPLACE (Nombre,'Ã‰', 'É'),
+		Apellido = REPLACE (Apellido,'Ã‰', 'É'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã‰', 'É'),
+		localidad = REPLACE(localidad,'Ã‰', 'É'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã‰', 'É')
+	where Nombre like ('%Ã‰%') or Apellido like ('%Ã‰%') or
+			Nacionalidad like ('%Ã‰%') or localidad like ('%Ã‰%') or
+			Calle_y_Nro like ('%Ã‰%')
 
 
 	update #PacientesTemporal
-	set Nombre = replace(nombre,'Ó','�'),
-		Apellido = REPLACE (Apellido,'Ó', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'Ó', '�'),
-		localidad = REPLACE(localidad,'Ó', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ó', '�')
-	where Nombre like ('%Ó%') or Apellido like ('%Ó%') or
-			Nacionalidad like ('%Ó%') or localidad like ('%Ó%') or
-			Calle_y_Nro like ('%Ó%')
+	set Nombre = replace(nombre,'Ã','Í'),
+		Apellido = REPLACE (Apellido,'Ã', 'Í'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã', 'Í'),
+		localidad = REPLACE(localidad,'Ã', 'Í'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã', 'Í')
+	where Nombre like ('%Ã%') or Apellido like ('%Ã%') or
+			Nacionalidad like ('%Ã%') or localidad like ('%Ã%') or
+			Calle_y_Nro like ('%Ã%')
 
 
 	update #PacientesTemporal
-	set Nombre = replace(nombre,'Ú','�'),
-		Apellido = REPLACE (Apellido,'Ú', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'Ú', '�'),
-		localidad = REPLACE(localidad,'Ú', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ú', '�')
-	where Nombre like ('%Ú%') or Apellido like ('%Ú%') or
-			Nacionalidad like ('%Ú%') or localidad like ('%Ú%') or
-			Calle_y_Nro like ('%Ú%')
+	set Nombre = replace(nombre,'Ã“','Ó'),
+		Apellido = REPLACE (Apellido,'Ã“', 'Ó'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã“', 'Ó'),
+		localidad = REPLACE(localidad,'Ã“', 'Ó'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã“', 'Ó')
+	where Nombre like ('%Ã“%') or Apellido like ('%Ã“%') or
+			Nacionalidad like ('%Ã“%') or localidad like ('%Ã“%') or
+			Calle_y_Nro like ('%Ã“%')
 
 
 	update #PacientesTemporal
-	set Nombre = REPLACE (Nombre,'�', '�'),
-		Apellido = REPLACE (Apellido,'�', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'�', '�'),
-		localidad = REPLACE(localidad,'�', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'�', '�')
-	where Nombre like ('%�%') or Apellido like ('%�%') or
-			Nacionalidad like ('%�%') or localidad like ('%�%') or
-			Calle_y_Nro like ('%�%')
+	set Nombre = replace(nombre,'Ãš','Ú'),
+		Apellido = REPLACE (Apellido,'Ãš', 'Ú'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ãš', 'Ú'),
+		localidad = REPLACE(localidad,'Ãš', 'Ú'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ãš', 'Ú')
+	where Nombre like ('%Ãš%') or Apellido like ('%Ãš%') or
+			Nacionalidad like ('%Ãš%') or localidad like ('%Ãš%') or
+			Calle_y_Nro like ('%Ãš%')
+
 
 	update #PacientesTemporal
-	set Nombre = replace(Nombre,'ñ','�'),
-		Apellido = REPLACE (Apellido,'ñ', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'ñ', '�'),
-		localidad = REPLACE(localidad,'ñ', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'ñ', '�')
-	where Nombre like ('%ñ%') or Apellido like ('%ñ%') or
-			Nacionalidad like ('%ñ%') or localidad like ('%ñ%') or
-			Calle_y_Nro like ('%ñ%')
+	set Nombre = REPLACE (Nombre,'Ã', 'à'),
+		Apellido = REPLACE (Apellido,'Ã', 'à'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã', 'à'),
+		localidad = REPLACE(localidad,'Ã', 'à'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã', 'à')
+	where Nombre like ('%Ã%') or Apellido like ('%Ã%') or
+			Nacionalidad like ('%Ã%') or localidad like ('%Ã%') or
+			Calle_y_Nro like ('%Ã%')
 
 	update #PacientesTemporal
-	set Nombre = replace(nombre,'Ñ','�'),
-		Apellido = REPLACE (Apellido,'Ñ', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'Ñ', '�'),
-		localidad = REPLACE(localidad,'Ñ', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ñ', '�')
-	where Nombre like ('%Ñ%') or Apellido like ('%Ñ%') or
-			Nacionalidad like ('%Ñ%') or localidad like ('%Ñ%') or
-			Calle_y_Nro like ('%Ñ%')
+	set Nombre = replace(Nombre,'Ã±','ñ'),
+		Apellido = REPLACE (Apellido,'Ã±', 'ñ'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã±', 'ñ'),
+		localidad = REPLACE(localidad,'Ã±', 'ñ'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã±', 'ñ')
+	where Nombre like ('%Ã±%') or Apellido like ('%Ã±%') or
+			Nacionalidad like ('%Ã±%') or localidad like ('%Ã±%') or
+			Calle_y_Nro like ('%Ã±%')
 
 	update #PacientesTemporal
-	set Nombre = replace(nombre,'º','�'),
-		Apellido = REPLACE (Apellido,'º', '�'),
-		Nacionalidad = REPLACE (Nacionalidad,'º', '�'),
-		localidad = REPLACE(localidad,'º', '�'),
-		Calle_y_Nro = REPLACE(Calle_y_Nro,'º', '�')
-	where Nombre like ('%º%') or Apellido like ('%º%') or
-			Nacionalidad like ('%º%') or localidad like ('%º%') or
-			Calle_y_Nro like ('%º%')
+	set Nombre = replace(nombre,'Ã‘','Ñ'),
+		Apellido = REPLACE (Apellido,'Ã‘', 'Ñ'),
+		Nacionalidad = REPLACE (Nacionalidad,'Ã‘', 'Ñ'),
+		localidad = REPLACE(localidad,'Ã‘', 'Ñ'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Ã‘', 'Ñ')
+	where Nombre like ('%Ã‘%') or Apellido like ('%Ã‘%') or
+			Nacionalidad like ('%Ã‘%') or localidad like ('%Ã‘%') or
+			Calle_y_Nro like ('%Ã‘%')
+
+	update #PacientesTemporal
+	set Nombre = replace(nombre,'Âº','°'),
+		Apellido = REPLACE (Apellido,'Âº', '°'),
+		Nacionalidad = REPLACE (Nacionalidad,'Âº', '°'),
+		localidad = REPLACE(localidad,'Âº', '°'),
+		Calle_y_Nro = REPLACE(Calle_y_Nro,'Âº', '°')
+	where Nombre like ('%Âº%') or Apellido like ('%Âº%') or
+			Nacionalidad like ('%Âº%') or localidad like ('%Âº%') or
+			Calle_y_Nro like ('%Âº%')
 
 			
 	insert into datos_paciente.Paciente(nombre,apellido,fecha_nacimiento,tipo_documento,
@@ -290,93 +290,93 @@ create table #MedicosTemporal (
 
 
 	update #MedicosTemporal
-	set Especialidad = REPLACE (Especialidad,'á', '�'),
-		Apellido = REPLACE (Apellido,'á', '�'),
-		Nombre = REPLACE (Nombre, 'á', '�')
-	where Especialidad like ('%á%') or Apellido like ('%á%') or Nombre like('%á%')
+	set Especialidad = REPLACE (Especialidad,'Ã¡', 'á'),
+		Apellido = REPLACE (Apellido,'Ã¡', 'á'),
+		Nombre = REPLACE (Nombre, 'Ã¡', 'á')
+	where Especialidad like ('%Ã¡%') or Apellido like ('%Ã¡%') or Nombre like('%Ã¡%')
 
 	update #MedicosTemporal
-	set Especialidad = replace(Especialidad,'é','�'),
-		Apellido = REPLACE (Apellido,'é', '�'),
-		Nombre = REPLACE (Nombre,'é', '�')
-	where Especialidad like ('%é%') or Apellido like ('%é%') or Nombre like('%é%')
+	set Especialidad = replace(Especialidad,'Ã©','é'),
+		Apellido = REPLACE (Apellido,'Ã©', 'é'),
+		Nombre = REPLACE (Nombre,'Ã©', 'é')
+	where Especialidad like ('%Ã©%') or Apellido like ('%Ã©%') or Nombre like('%Ã©%')
 
 	update #MedicosTemporal
-	set Especialidad = REPLACE (Especialidad,'í', '�'),
-		Apellido = REPLACE (Apellido,'í', '�'),
-		Nombre = REPLACE (Nombre,'í', '�')
-	where Especialidad like ('%í%') or Apellido like ('%í%') or Nombre like ('%í%')
+	set Especialidad = REPLACE (Especialidad,'Ã­', 'í'),
+		Apellido = REPLACE (Apellido,'Ã­', 'í'),
+		Nombre = REPLACE (Nombre,'Ã­', 'í')
+	where Especialidad like ('%Ã­%') or Apellido like ('%Ã­%') or Nombre like ('%Ã­%')
 
 	update #MedicosTemporal
-	set Especialidad = REPLACE (Especialidad,'ó', '�'),
-		Apellido = REPLACE (Apellido,'ó', '�'),
-		Nombre = REPLACE (Nombre,'ó', '�')
-	where Especialidad like ('%ó%') or Apellido like ('%ó%') or Nombre like ('%ó%') 
+	set Especialidad = REPLACE (Especialidad,'Ã³', 'ó'),
+		Apellido = REPLACE (Apellido,'Ã³', 'ó'),
+		Nombre = REPLACE (Nombre,'Ã³', 'ó')
+	where Especialidad like ('%Ã³%') or Apellido like ('%Ã³%') or Nombre like ('%Ã³%') 
 
 	update #MedicosTemporal
-	set Especialidad = replace(Especialidad,'ú','�'),
-		Apellido = REPLACE (Apellido,'ú', '�'),
-		Nombre = REPLACE (Nombre,'ú', '�')
-	where  Especialidad like ('%ú%') or Apellido like ('%ú%') or Nombre like ('%ú%')
-
-
-	update #MedicosTemporal
-	set Especialidad = REPLACE (Especialidad,'Á', '�'),
-		Apellido = REPLACE (Apellido,'Á', '�'),
-		Nombre = REPLACE (Nombre,'Á', '�')
-	where Especialidad like ('%Á%') or Apellido like ('%Á%') or Nombre like ('%Á%')
+	set Especialidad = replace(Especialidad,'Ãº','ú'),
+		Apellido = REPLACE (Apellido,'Ãº', 'ú'),
+		Nombre = REPLACE (Nombre,'Ãº', 'ú')
+	where  Especialidad like ('%Ãº%') or Apellido like ('%Ãº%') or Nombre like ('%Ãº%')
 
 
 	update #MedicosTemporal
-	set Especialidad = REPLACE (Especialidad,'É', '�'),
-		Apellido = REPLACE (Apellido,'É', '�'),
-		Nombre = REPLACE (Nombre,'É', '�')
-	where Especialidad like ('%É%') or Apellido like ('%É%')  or Nombre like ('%É%')
+	set Especialidad = REPLACE (Especialidad,'Ã', 'Á'),
+		Apellido = REPLACE (Apellido,'Ã', 'Á'),
+		Nombre = REPLACE (Nombre,'Ã', 'Á')
+	where Especialidad like ('%Ã%') or Apellido like ('%Ã%') or Nombre like ('%Ã%')
 
 
 	update #MedicosTemporal
-	set Especialidad = replace(Especialidad,'Í','�'),
-		Apellido = REPLACE (Apellido,'Í', '�'),
-		Nombre = REPLACE (Nombre,'Í', '�')
-	where Especialidad like ('%Í%') or Apellido like ('%Í%') or Nombre like ('%Í%')
+	set Especialidad = REPLACE (Especialidad,'Ã‰', 'É'),
+		Apellido = REPLACE (Apellido,'Ã‰', 'É'),
+		Nombre = REPLACE (Nombre,'Ã‰', 'É')
+	where Especialidad like ('%Ã‰%') or Apellido like ('%Ã‰%')  or Nombre like ('%Ã‰%')
 
 
 	update #MedicosTemporal
-	set Especialidad = replace(Especialidad,'Ó','�'),
-		Apellido = REPLACE (Apellido,'Ó', '�'),
-		Nombre = REPLACE (Nombre,'Ó', '�')
-	where Especialidad like ('%Ó%') or Apellido like ('%Ó%') or Nombre like ('%Ó%')
+	set Especialidad = replace(Especialidad,'Ã','Í'),
+		Apellido = REPLACE (Apellido,'Ã', 'Í'),
+		Nombre = REPLACE (Nombre,'Ã', 'Í')
+	where Especialidad like ('%Ã%') or Apellido like ('%Ã%') or Nombre like ('%Ã%')
 
 
 	update #MedicosTemporal
-	set Especialidad = replace(Especialidad,'Ú','�'),
-		Apellido = REPLACE (Apellido,'Ú', '�'),
-		Nombre = REPLACE (Nombre,'Ú', '�')
-	where Especialidad like ('%Ú%') or Apellido like ('%Ú%')or Nombre like ('%Ú%')
+	set Especialidad = replace(Especialidad,'Ã“','Ó'),
+		Apellido = REPLACE (Apellido,'Ã“', 'Ó'),
+		Nombre = REPLACE (Nombre,'Ã“', 'Ó')
+	where Especialidad like ('%Ã“%') or Apellido like ('%Ã“%') or Nombre like ('%Ã“%')
+
 
 	update #MedicosTemporal
-	set Especialidad = REPLACE (Especialidad,'�', '�'),
-		Apellido = REPLACE (Apellido,'�', '�'),
-		Nombre = REPLACE (Nombre,'�', '�')
-	where Especialidad like ('%�%') or Apellido like ('%�%') or Nombre like ('%�%')
+	set Especialidad = replace(Especialidad,'Ãš','Ú'),
+		Apellido = REPLACE (Apellido,'Ãš', 'Ú'),
+		Nombre = REPLACE (Nombre,'Ãš', 'Ú')
+	where Especialidad like ('%Ãš%') or Apellido like ('%Ãš%')or Nombre like ('%Ãš%')
 
 	update #MedicosTemporal
-	set Especialidad = replace(Especialidad,'ñ','�'),
-		Apellido = REPLACE (Apellido,'ñ', '�'),
-		Nombre = REPLACE (Nombre,'ñ', '�')
-	where Especialidad like ('%ñ%') or Apellido like ('%ñ%') or Nombre like ('%ñ%')
+	set Especialidad = REPLACE (Especialidad,'Ã', 'à'),
+		Apellido = REPLACE (Apellido,'Ã', 'à'),
+		Nombre = REPLACE (Nombre,'Ã', 'à')
+	where Especialidad like ('%Ã%') or Apellido like ('%Ã%') or Nombre like ('%Ã%')
 
 	update #MedicosTemporal
-	set Especialidad = replace(Especialidad,'Ñ','�'),
-		Apellido = REPLACE (Apellido,'Ñ', '�'),
-		Nombre = REPLACE (Nombre,'Ñ', '�')
-	where Especialidad like ('%Ñ%') or Apellido like ('%Ñ%')or Nombre like ('%Ñ%')
+	set Especialidad = replace(Especialidad,'Ã±','ñ'),
+		Apellido = REPLACE (Apellido,'Ã±', 'ñ'),
+		Nombre = REPLACE (Nombre,'Ã±', 'ñ')
+	where Especialidad like ('%Ã±%') or Apellido like ('%Ã±%') or Nombre like ('%Ã±%')
 
 	update #MedicosTemporal
-	set Especialidad = replace(Especialidad,'º','�'),
-		Apellido = REPLACE (Apellido,'º', '�'),
-		Nombre = REPLACE (Nombre,'º', '�')
-	where Especialidad like ('%º%') or Apellido like ('%º%') or Nombre like ('%º%')
+	set Especialidad = replace(Especialidad,'Ã‘','Ñ'),
+		Apellido = REPLACE (Apellido,'Ã‘', 'Ñ'),
+		Nombre = REPLACE (Nombre,'Ã‘', 'Ñ')
+	where Especialidad like ('%Ã‘%') or Apellido like ('%Ã‘%')or Nombre like ('%Ã‘%')
+
+	update #MedicosTemporal
+	set Especialidad = replace(Especialidad,'Âº','°'),
+		Apellido = REPLACE (Apellido,'Âº', '°'),
+		Nombre = REPLACE (Nombre,'Âº', '°')
+	where Especialidad like ('%Âº%') or Apellido like ('%Âº%') or Nombre like ('%Âº%')
 
 	--elimino el dr, dra, kgo ... de la cadena, me quedo solo con el apellido
 	UPDATE #MedicosTemporal
@@ -447,122 +447,122 @@ begin
 	exec sp_executesql @sql
 
 	update #SedesTemporal
-	set sede = REPLACE (sede,'á', '�'),
-		provincia = REPLACE (provincia,'á', '�'),
-		direccion = REPLACE (direccion,'á', '�'),
-		localidad = REPLACE(localidad,'á', '�')
-	where sede like ('%á%') or provincia like ('%á%') or
-			direccion like ('%á%') or localidad like ('%á%')
+	set sede = REPLACE (sede,'Ã¡', 'á'),
+		provincia = REPLACE (provincia,'Ã¡', 'á'),
+		direccion = REPLACE (direccion,'Ã¡', 'á'),
+		localidad = REPLACE(localidad,'Ã¡', 'á')
+	where sede like ('%Ã¡%') or provincia like ('%Ã¡%') or
+			direccion like ('%Ã¡%') or localidad like ('%Ã¡%')
 
 	update #SedesTemporal
-	set sede = replace(sede,'é','�'),
-		provincia = REPLACE (provincia,'é', '�'),
-		direccion = REPLACE (direccion,'é', '�'),
-		localidad = REPLACE(localidad,'é', '�')
-	where sede like ('%é%') or provincia like ('%é%') or
-			direccion like ('%é%') or localidad like ('%é%')
-
-
-	update #SedesTemporal
-	set sede = REPLACE (sede,'í', '�'),
-		provincia = REPLACE (provincia,'í', '�'),
-		direccion = REPLACE (direccion,'í', '�'),
-		localidad = REPLACE(localidad,'í', '�')
-	where provincia like ('%í%') or sede like ('%í%') or
-			direccion like ('%í%') or localidad like ('%í%')
-
-	update #SedesTemporal
-	set sede = REPLACE (sede,'ó', '�'),
-		direccion = REPLACE (direccion,'ó', '�'),
-		provincia = REPLACE (provincia,'ó', '�'),
-		localidad = REPLACE(localidad,'ó', '�')
-	where sede like ('%ó%') or provincia like ('%ó%') or
-			direccion like ('%ó%') or localidad like ('%ó%')
-
-	update #SedesTemporal
-	set sede = replace(sede,'ú','�'),
-		direccion = REPLACE (direccion,'ú', '�'),
-		provincia = REPLACE (provincia,'ú', '�'),
-		localidad = REPLACE(localidad,'ú', '�')
-	where sede like ('%ú%') or direccion like ('%ú%') or
-			provincia like ('%ú%') or localidad like ('%ú%')
+	set sede = replace(sede,'Ã©','é'),
+		provincia = REPLACE (provincia,'Ã©', 'é'),
+		direccion = REPLACE (direccion,'Ã©', 'é'),
+		localidad = REPLACE(localidad,'Ã©', 'é')
+	where sede like ('%Ã©%') or provincia like ('%Ã©%') or
+			direccion like ('%Ã©%') or localidad like ('%Ã©%')
 
 
 	update #SedesTemporal
-	set sede = REPLACE (sede,'Á', '�'),
-		direccion = REPLACE (direccion,'Á', '�'),
-		provincia = REPLACE (provincia,'Á', '�'),
-		localidad = REPLACE(localidad,'Á', '�')
-	where sede like ('%Á%') or direccion like ('%Á%') or
-			provincia like ('%Á%') or localidad like ('%Á%')
+	set sede = REPLACE (sede,'Ã­', 'í'),
+		provincia = REPLACE (provincia,'Ã­', 'í'),
+		direccion = REPLACE (direccion,'Ã­', 'í'),
+		localidad = REPLACE(localidad,'Ã­', 'í')
+	where provincia like ('%Ã­%') or sede like ('%Ã­%') or
+			direccion like ('%Ã­%') or localidad like ('%Ã­%')
+
+	update #SedesTemporal
+	set sede = REPLACE (sede,'Ã³', 'ó'),
+		direccion = REPLACE (direccion,'Ã³', 'ó'),
+		provincia = REPLACE (provincia,'Ã³', 'ó'),
+		localidad = REPLACE(localidad,'Ã³', 'ó')
+	where sede like ('%Ã³%') or provincia like ('%Ã³%') or
+			direccion like ('%Ã³%') or localidad like ('%Ã³%')
+
+	update #SedesTemporal
+	set sede = replace(sede,'Ãº','ú'),
+		direccion = REPLACE (direccion,'Ãº', 'ú'),
+		provincia = REPLACE (provincia,'Ãº', 'ú'),
+		localidad = REPLACE(localidad,'Ãº', 'ú')
+	where sede like ('%Ãº%') or direccion like ('%Ãº%') or
+			provincia like ('%Ãº%') or localidad like ('%Ãº%')
 
 
 	update #SedesTemporal
-	set sede = REPLACE (sede,'É', '�'),
-		direccion = REPLACE (direccion,'É', '�'),
-		provincia = REPLACE (provincia,'É', '�'),
-		localidad = REPLACE(localidad,'É', '�')
-	where sede like ('%É%') or direccion like ('%É%') or
-			provincia like ('%É%') or localidad like ('%É%')
-
-	update #SedesTemporal
-	set sede = replace(sede,'Í','�'),
-		direccion = REPLACE (direccion,'Í', '�'),
-		provincia = REPLACE (provincia,'Í', '�'),
-		localidad = REPLACE(localidad,'Í', '�')
-	where sede like ('%Í%') or direccion like ('%Í%') or
-			provincia like ('%Í%') or localidad like ('%Í%')
+	set sede = REPLACE (sede,'Ã', 'Á'),
+		direccion = REPLACE (direccion,'Ã', 'Á'),
+		provincia = REPLACE (provincia,'Ã', 'Á'),
+		localidad = REPLACE(localidad,'Ã', 'Á')
+	where sede like ('%Ã%') or direccion like ('%Ã%') or
+			provincia like ('%Ã%') or localidad like ('%Ã%')
 
 
 	update #SedesTemporal
-	set sede = replace(sede,'Ó','�'),
-		direccion = REPLACE (direccion,'Ó', '�'),
-		provincia = REPLACE (provincia,'Ó', '�'),
-		localidad = REPLACE(localidad,'Ó', '�')
-	where sede like ('%Ó%') or direccion like ('%Ó%') or
-			provincia like ('%Ó%') or localidad like ('%Ó%')
+	set sede = REPLACE (sede,'Ã‰', 'É'),
+		direccion = REPLACE (direccion,'Ã‰', 'É'),
+		provincia = REPLACE (provincia,'Ã‰', 'É'),
+		localidad = REPLACE(localidad,'Ã‰', 'É')
+	where sede like ('%Ã‰%') or direccion like ('%Ã‰%') or
+			provincia like ('%Ã‰%') or localidad like ('%Ã‰%')
+
+	update #SedesTemporal
+	set sede = replace(sede,'Ã','Í'),
+		direccion = REPLACE (direccion,'Ã', 'Í'),
+		provincia = REPLACE (provincia,'Ã', 'Í'),
+		localidad = REPLACE(localidad,'Ã', 'Í')
+	where sede like ('%Ã%') or direccion like ('%Ã%') or
+			provincia like ('%Ã%') or localidad like ('%Ã%')
 
 
 	update #SedesTemporal
-	set sede = replace(sede,'Ú','�'),
-		direccion = REPLACE (direccion,'Ú', '�'),
-		provincia = REPLACE (provincia,'Ú', '�'),
-		localidad = REPLACE(localidad,'Ú', '�')
-	where sede like ('%Ú%') or direccion like ('%Ú%') or
-			provincia like ('%Ú%') or localidad like ('%Ú%')
+	set sede = replace(sede,'Ã“','Ó'),
+		direccion = REPLACE (direccion,'Ã“', 'Ó'),
+		provincia = REPLACE (provincia,'Ã“', 'Ó'),
+		localidad = REPLACE(localidad,'Ã“', 'Ó')
+	where sede like ('%Ã“%') or direccion like ('%Ã“%') or
+			provincia like ('%Ã“%') or localidad like ('%Ã“%')
 
 
 	update #SedesTemporal
-	set sede = REPLACE (sede,'�', '�'),
-		direccion = REPLACE (direccion,'�', '�'),
-		provincia = REPLACE (provincia,'�', '�'),
-		localidad = REPLACE(localidad,'�', '�')
-	where sede like ('%�%') or direccion like ('%�%') or
-			provincia like ('%�%') or localidad like ('%�%')
+	set sede = replace(sede,'Ãš','Ú'),
+		direccion = REPLACE (direccion,'Ãš', 'Ú'),
+		provincia = REPLACE (provincia,'Ãš', 'Ú'),
+		localidad = REPLACE(localidad,'Ãš', 'Ú')
+	where sede like ('%Ãš%') or direccion like ('%Ãš%') or
+			provincia like ('%Ãš%') or localidad like ('%Ãš%')
+
 
 	update #SedesTemporal
-	set sede = replace(sede,'ñ','�'),
-		direccion = REPLACE (direccion,'ñ', '�'),
-		provincia = REPLACE (provincia,'ñ', '�'),
-		localidad = REPLACE(localidad,'ñ', '�')
-	where sede like ('%ñ%') or direccion like ('%ñ%') or
-			provincia like ('%ñ%') or localidad like ('%ñ%')
+	set sede = REPLACE (sede,'Ã', 'à'),
+		direccion = REPLACE (direccion,'Ã', 'à'),
+		provincia = REPLACE (provincia,'Ã', 'à'),
+		localidad = REPLACE(localidad,'Ã', 'à')
+	where sede like ('%Ã%') or direccion like ('%Ã%') or
+			provincia like ('%Ã%') or localidad like ('%Ã%')
 
 	update #SedesTemporal
-	set sede = replace(sede,'Ñ','�'),
-		direccion = REPLACE (direccion,'Ñ', '�'),
-		provincia = REPLACE (provincia,'Ñ', '�'),
-		localidad = REPLACE(localidad,'Ñ', '�')
-	where sede like ('%Ñ%') or direccion like ('%Ñ%') or
-			provincia like ('%Ñ%') or localidad like ('%Ñ%')
+	set sede = replace(sede,'Ã±','ñ'),
+		direccion = REPLACE (direccion,'Ã±', 'ñ'),
+		provincia = REPLACE (provincia,'Ã±', 'ñ'),
+		localidad = REPLACE(localidad,'Ã±', 'ñ')
+	where sede like ('%Ã±%') or direccion like ('%Ã±%') or
+			provincia like ('%Ã±%') or localidad like ('%Ã±%')
 
 	update #SedesTemporal
-	set sede = replace(sede,'º','�'),
-		direccion = REPLACE (direccion,'º', '�'),
-		provincia = REPLACE (provincia,'º', '�'),
-		localidad = REPLACE(localidad,'º', '�')
-	where sede like ('%º%') or direccion like ('%º%') or
-			provincia like ('%º%') or localidad like ('%º%')
+	set sede = replace(sede,'Ã‘','Ñ'),
+		direccion = REPLACE (direccion,'Ã‘', 'Ñ'),
+		provincia = REPLACE (provincia,'Ã‘', 'Ñ'),
+		localidad = REPLACE(localidad,'Ã‘', 'Ñ')
+	where sede like ('%Ã‘%') or direccion like ('%Ã‘%') or
+			provincia like ('%Ã‘%') or localidad like ('%Ã‘%')
+
+	update #SedesTemporal
+	set sede = replace(sede,'Âº','°'),
+		direccion = REPLACE (direccion,'Âº', '°'),
+		provincia = REPLACE (provincia,'Âº', '°'),
+		localidad = REPLACE(localidad,'Âº', '°')
+	where sede like ('%Âº%') or direccion like ('%Âº%') or
+			provincia like ('%Âº%') or localidad like ('%Âº%')
 	
 	update #SedesTemporal
 	set sede = ltrim(rtrim(sede))
@@ -606,80 +606,80 @@ begin
 	exec sp_executesql @sql
 
 	update #PrestadorTemporal
-	set prestador = REPLACE (prestador,'á', '�'),
-		planes = REPLACE (planes,'á', '�')
-	where prestador like ('%á%') or planes like ('%á%')
+	set prestador = REPLACE (prestador,'Ã¡', 'á'),
+		planes = REPLACE (planes,'Ã¡', 'á')
+	where prestador like ('%Ã¡%') or planes like ('%Ã¡%')
 
 	update #PrestadorTemporal
-	set prestador = replace(prestador,'é','�'),
-		planes = REPLACE (planes,'é', '�')
-	where prestador like ('%é%') or planes like ('%é%')
-
-
-	update #PrestadorTemporal
-	set prestador = REPLACE (prestador,'í', '�'),
-		planes = REPLACE (planes,'í', '�')
-	where prestador like ('%í%') or planes like ('%í%')
-
-	update #PrestadorTemporal
-	set prestador = REPLACE (prestador,'ó', '�'),
-		planes = REPLACE (planes,'ó', '�')
-	where prestador like ('%ó%') or planes like ('%ó%')
-
-	update #PrestadorTemporal
-	set prestador = replace(prestador,'ú','�'),
-		planes = REPLACE (planes,'ú', '�')
-	where prestador like ('%ú%') or planes like ('%ú%')
+	set prestador = replace(prestador,'Ã©','é'),
+		planes = REPLACE (planes,'Ã©', 'é')
+	where prestador like ('%Ã©%') or planes like ('%Ã©%')
 
 
 	update #PrestadorTemporal
-	set prestador = REPLACE (prestador,'Á', '�'),
-		planes = REPLACE (planes,'Á', '�')
-	where planes like ('%Á%') or prestador like ('%Á%')
+	set prestador = REPLACE (prestador,'Ã­', 'í'),
+		planes = REPLACE (planes,'Ã­', 'í')
+	where prestador like ('%Ã­%') or planes like ('%Ã­%')
+
+	update #PrestadorTemporal
+	set prestador = REPLACE (prestador,'Ã³', 'ó'),
+		planes = REPLACE (planes,'Ã³', 'ó')
+	where prestador like ('%Ã³%') or planes like ('%Ã³%')
+
+	update #PrestadorTemporal
+	set prestador = replace(prestador,'Ãº','ú'),
+		planes = REPLACE (planes,'Ãº', 'ú')
+	where prestador like ('%Ãº%') or planes like ('%Ãº%')
 
 
 	update #PrestadorTemporal
-	set prestador = REPLACE (prestador,'É', '�'),
-		planes = REPLACE (planes,'É', '�')
-	where prestador like ('%É%') or planes like ('%É%')
-
-	update #PrestadorTemporal
-	set prestador = replace(prestador,'Í','�'),
-		planes = REPLACE (planes,'Í', '�')
-	where prestador like ('%Í%') or planes like ('%Í%')
+	set prestador = REPLACE (prestador,'Ã', 'Á'),
+		planes = REPLACE (planes,'Ã', 'Á')
+	where planes like ('%Ã%') or prestador like ('%Ã%')
 
 
 	update #PrestadorTemporal
-	set prestador = replace(prestador,'Ó','�'),
-		planes = REPLACE (planes,'Ó', '�')
-	where prestador like ('%Ó%') or planes like ('%Ó%')
+	set prestador = REPLACE (prestador,'Ã‰', 'É'),
+		planes = REPLACE (planes,'Ã‰', 'É')
+	where prestador like ('%Ã‰%') or planes like ('%Ã‰%')
+
+	update #PrestadorTemporal
+	set prestador = replace(prestador,'Ã','Í'),
+		planes = REPLACE (planes,'Ã', 'Í')
+	where prestador like ('%Ã%') or planes like ('%Ã%')
 
 
 	update #PrestadorTemporal
-	set prestador = replace(prestador,'Ú','�'),
-		planes = REPLACE (planes,'Ú', '�')
-	where prestador like ('%Ú%') or planes like ('%Ú%')
+	set prestador = replace(prestador,'Ã“','Ó'),
+		planes = REPLACE (planes,'Ã“', 'Ó')
+	where prestador like ('%Ã“%') or planes like ('%Ã“%')
 
 
 	update #PrestadorTemporal
-	set prestador = REPLACE (prestador,'�', '�'),
-		planes = REPLACE (planes,'�', '�')
-	where prestador like ('%�%') or planes like ('%�%')
+	set prestador = replace(prestador,'Ãš','Ú'),
+		planes = REPLACE (planes,'Ãš', 'Ú')
+	where prestador like ('%Ãš%') or planes like ('%Ãš%')
+
 
 	update #PrestadorTemporal
-	set prestador = replace(prestador,'ñ','�'),
-		planes = REPLACE (planes,'ñ', '�')
-	where prestador like ('%ñ%') or planes like ('%ñ%')
+	set prestador = REPLACE (prestador,'Ã', 'à'),
+		planes = REPLACE (planes,'Ã', 'à')
+	where prestador like ('%Ã%') or planes like ('%Ã%')
 
 	update #PrestadorTemporal
-	set prestador = replace(prestador,'Ñ','�'),
-		planes = REPLACE (planes,'Ñ', '�')
-	where prestador like ('%Ñ%') or planes like ('%Ñ%')
+	set prestador = replace(prestador,'Ã±','ñ'),
+		planes = REPLACE (planes,'Ã±', 'ñ')
+	where prestador like ('%Ã±%') or planes like ('%Ã±%')
 
 	update #PrestadorTemporal
-	set prestador = replace(prestador,'º','�'),
-		planes = REPLACE (planes,'º', '�')
-	where prestador like ('%º%') or planes like ('%º%')
+	set prestador = replace(prestador,'Ã‘','Ñ'),
+		planes = REPLACE (planes,'Ã‘', 'Ñ')
+	where prestador like ('%Ã‘%') or planes like ('%Ã‘%')
+
+	update #PrestadorTemporal
+	set prestador = replace(prestador,'Âº','°'),
+		planes = REPLACE (planes,'Âº', '°')
+	where prestador like ('%Âº%') or planes like ('%Âº%')
 
 	update #PrestadorTemporal
 	set planes = ltrim(rtrim(planes)),
@@ -718,9 +718,9 @@ begin
 
 	create table #AutorizacionEstudiosTemp 
 	(
-		area nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		estudio nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		prestador nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		area nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		estudio nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		prestador nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
 		plan_ nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
 		[Porcentaje Cobertura] int,
 		costo decimal(10,2),
@@ -746,122 +746,122 @@ begin
 	exec sp_executesql @sql
 
 	update #AutorizacionEstudiosTemp
-	set area = REPLACE (area,'á', '�'),
-		estudio = REPLACE (estudio,'á', '�'),
-		prestador = REPLACE (prestador,'á', '�'),
-		plan_ = REPLACE(plan_,'á', '�')
-	where area like ('%á%') or estudio like ('%á%') or
-			prestador like ('%á%') or plan_ like ('%á%')
+	set area = REPLACE (area,'Ã¡', 'á'),
+		estudio = REPLACE (estudio,'Ã¡', 'á'),
+		prestador = REPLACE (prestador,'Ã¡', 'á'),
+		plan_ = REPLACE(plan_,'Ã¡', 'á')
+	where area like ('%Ã¡%') or estudio like ('%Ã¡%') or
+			prestador like ('%Ã¡%') or plan_ like ('%Ã¡%')
 
 	update #AutorizacionEstudiosTemp
-	set area = replace(area,'é','�'),
-		estudio = REPLACE (estudio,'é', '�'),
-		prestador = REPLACE (prestador,'é', '�'),
-		plan_ = REPLACE(plan_,'é', '�')
-	where area like ('%é%') or estudio like ('%é%') or
-			prestador like ('%é%') or plan_ like ('%é%')
-
-
-	update #AutorizacionEstudiosTemp
-	set area = REPLACE (area,'í', '�'),
-		estudio = REPLACE (estudio,'í', '�'),
-		prestador = REPLACE (prestador,'í', '�'),
-		plan_ = REPLACE(plan_,'í', '�')
-	where estudio like ('%í%') or area like ('%í%') or
-			prestador like ('%í%') or plan_ like ('%í%')
-
-	update #AutorizacionEstudiosTemp
-	set area = REPLACE (area,'ó', '�'),
-		prestador = REPLACE (prestador,'ó', '�'),
-		estudio = REPLACE (estudio,'ó', '�'),
-		plan_ = REPLACE(plan_,'ó', '�')
-	where area like ('%ó%') or estudio like ('%ó%') or
-			prestador like ('%ó%') or plan_ like ('%ó%')
-
-	update #AutorizacionEstudiosTemp
-	set area = replace(area,'ú','�'),
-		prestador = REPLACE (prestador,'ú', '�'),
-		estudio = REPLACE (estudio,'ú', '�'),
-		plan_ = REPLACE(plan_,'ú', '�')
-	where area like ('%ú%') or prestador like ('%ú%') or
-			estudio like ('%ú%') or plan_ like ('%ú%')
+	set area = replace(area,'Ã©','é'),
+		estudio = REPLACE (estudio,'Ã©', 'é'),
+		prestador = REPLACE (prestador,'Ã©', 'é'),
+		plan_ = REPLACE(plan_,'Ã©', 'é')
+	where area like ('%Ã©%') or estudio like ('%Ã©%') or
+			prestador like ('%Ã©%') or plan_ like ('%Ã©%')
 
 
 	update #AutorizacionEstudiosTemp
-	set area = REPLACE (area,'Á', '�'),
-		prestador = REPLACE (prestador,'Á', '�'),
-		estudio = REPLACE (estudio,'Á', '�'),
-		plan_ = REPLACE(plan_,'Á', '�')
-	where area like ('%Á%') or prestador like ('%Á%') or
-			estudio like ('%Á%') or plan_ like ('%Á%')
+	set area = REPLACE (area,'Ã­', 'í'),
+		estudio = REPLACE (estudio,'Ã­', 'í'),
+		prestador = REPLACE (prestador,'Ã­', 'í'),
+		plan_ = REPLACE(plan_,'Ã­', 'í')
+	where estudio like ('%Ã­%') or area like ('%Ã­%') or
+			prestador like ('%Ã­%') or plan_ like ('%Ã­%')
+
+	update #AutorizacionEstudiosTemp
+	set area = REPLACE (area,'Ã³', 'ó'),
+		prestador = REPLACE (prestador,'Ã³', 'ó'),
+		estudio = REPLACE (estudio,'Ã³', 'ó'),
+		plan_ = REPLACE(plan_,'Ã³', 'ó')
+	where area like ('%Ã³%') or estudio like ('%Ã³%') or
+			prestador like ('%Ã³%') or plan_ like ('%Ã³%')
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'Ãº','ú'),
+		prestador = REPLACE (prestador,'Ãº', 'ú'),
+		estudio = REPLACE (estudio,'Ãº', 'ú'),
+		plan_ = REPLACE(plan_,'Ãº', 'ú')
+	where area like ('%Ãº%') or prestador like ('%Ãº%') or
+			estudio like ('%Ãº%') or plan_ like ('%Ãº%')
 
 
 	update #AutorizacionEstudiosTemp
-	set area = REPLACE (area,'É', '�'),
-		prestador = REPLACE (prestador,'É', '�'),
-		estudio = REPLACE (estudio,'É', '�'),
-		plan_ = REPLACE(plan_,'É', '�')
-	where area like ('%É%') or prestador like ('%É%') or
-			estudio like ('%É%') or plan_ like ('%É%')
-
-	update #AutorizacionEstudiosTemp
-	set area = replace(area,'Í','�'),
-		prestador = REPLACE (prestador,'Í', '�'),
-		estudio = REPLACE (estudio,'Í', '�'),
-		plan_ = REPLACE(plan_,'Í', '�')
-	where area like ('%Í%') or prestador like ('%Í%') or
-			estudio like ('%Í%') or plan_ like ('%Í%')
+	set area = REPLACE (area,'Ã', 'Á'),
+		prestador = REPLACE (prestador,'Ã', 'Á'),
+		estudio = REPLACE (estudio,'Ã', 'Á'),
+		plan_ = REPLACE(plan_,'Ã', 'Á')
+	where area like ('%Ã%') or prestador like ('%Ã%') or
+			estudio like ('%Ã%') or plan_ like ('%Ã%')
 
 
 	update #AutorizacionEstudiosTemp
-	set area = replace(area,'Ó','�'),
-		prestador = REPLACE (prestador,'Ó', '�'),
-		estudio = REPLACE (estudio,'Ó', '�'),
-		plan_ = REPLACE(plan_,'Ó', '�')
-	where area like ('%Ó%') or prestador like ('%Ó%') or
-			estudio like ('%Ó%') or plan_ like ('%Ó%')
+	set area = REPLACE (area,'Ã‰', 'É'),
+		prestador = REPLACE (prestador,'Ã‰', 'É'),
+		estudio = REPLACE (estudio,'Ã‰', 'É'),
+		plan_ = REPLACE(plan_,'Ã‰', 'É')
+	where area like ('%Ã‰%') or prestador like ('%Ã‰%') or
+			estudio like ('%Ã‰%') or plan_ like ('%Ã‰%')
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'Ã','Í'),
+		prestador = REPLACE (prestador,'Ã', 'Í'),
+		estudio = REPLACE (estudio,'Ã', 'Í'),
+		plan_ = REPLACE(plan_,'Ã', 'Í')
+	where area like ('%Ã%') or prestador like ('%Ã%') or
+			estudio like ('%Ã%') or plan_ like ('%Ã%')
 
 
 	update #AutorizacionEstudiosTemp
-	set area = replace(area,'Ú','�'),
-		prestador = REPLACE (prestador,'Ú', '�'),
-		estudio = REPLACE (estudio,'Ú', '�'),
-		plan_ = REPLACE(plan_,'Ú', '�')
-	where area like ('%Ú%') or prestador like ('%Ú%') or
-			estudio like ('%Ú%') or plan_ like ('%Ú%')
+	set area = replace(area,'Ã“','Ó'),
+		prestador = REPLACE (prestador,'Ã“', 'Ó'),
+		estudio = REPLACE (estudio,'Ã“', 'Ó'),
+		plan_ = REPLACE(plan_,'Ã“', 'Ó')
+	where area like ('%Ã“%') or prestador like ('%Ã“%') or
+			estudio like ('%Ã“%') or plan_ like ('%Ã“%')
 
 
 	update #AutorizacionEstudiosTemp
-	set area = REPLACE (area,'�', '�'),
-		prestador = REPLACE (prestador,'�', '�'),
-		estudio = REPLACE (estudio,'�', '�'),
-		plan_ = REPLACE(plan_,'�', '�')
-	where area like ('%�%') or prestador like ('%�%') or
-			estudio like ('%�%') or plan_ like ('%�%')
+	set area = replace(area,'Ãš','Ú'),
+		prestador = REPLACE (prestador,'Ãš', 'Ú'),
+		estudio = REPLACE (estudio,'Ãš', 'Ú'),
+		plan_ = REPLACE(plan_,'Ãš', 'Ú')
+	where area like ('%Ãš%') or prestador like ('%Ãš%') or
+			estudio like ('%Ãš%') or plan_ like ('%Ãš%')
+
 
 	update #AutorizacionEstudiosTemp
-	set area = replace(area,'ñ','�'),
-		prestador = REPLACE (prestador,'ñ', '�'),
-		estudio = REPLACE (estudio,'ñ', '�'),
-		plan_ = REPLACE(plan_,'ñ', '�')
-	where area like ('%ñ%') or prestador like ('%ñ%') or
-			estudio like ('%ñ%') or plan_ like ('%ñ%')
+	set area = REPLACE (area,'Ã', 'à'),
+		prestador = REPLACE (prestador,'Ã', 'à'),
+		estudio = REPLACE (estudio,'Ã', 'à'),
+		plan_ = REPLACE(plan_,'Ã', 'à')
+	where area like ('%Ã%') or prestador like ('%Ã%') or
+			estudio like ('%Ã%') or plan_ like ('%Ã%')
 
 	update #AutorizacionEstudiosTemp
-	set area = replace(area,'Ñ','�'),
-		prestador = REPLACE (prestador,'Ñ', '�'),
-		estudio = REPLACE (estudio,'Ñ', '�'),
-		plan_ = REPLACE(plan_,'Ñ', '�')
-	where area like ('%Ñ%') or prestador like ('%Ñ%') or
-			estudio like ('%Ñ%') or plan_ like ('%Ñ%')
+	set area = replace(area,'Ã±','ñ'),
+		prestador = REPLACE (prestador,'Ã±', 'ñ'),
+		estudio = REPLACE (estudio,'Ã±', 'ñ'),
+		plan_ = REPLACE(plan_,'Ã±', 'ñ')
+	where area like ('%Ã±%') or prestador like ('%Ã±%') or
+			estudio like ('%Ã±%') or plan_ like ('%Ã±%')
 
 	update #AutorizacionEstudiosTemp
-	set area = replace(area,'º','�'),
-		prestador = REPLACE (prestador,'º', '�'),
-		estudio = REPLACE (estudio,'º', '�'),
-		plan_ = REPLACE(plan_,'º', '�')
-	where area like ('%º%') or prestador like ('%º%') or
-			estudio like ('%º%') or plan_ like ('%º%')
+	set area = replace(area,'Ã‘','Ñ'),
+		prestador = REPLACE (prestador,'Ã‘', 'Ñ'),
+		estudio = REPLACE (estudio,'Ã‘', 'Ñ'),
+		plan_ = REPLACE(plan_,'Ã‘', 'Ñ')
+	where area like ('%Ã‘%') or prestador like ('%Ã‘%') or
+			estudio like ('%Ã‘%') or plan_ like ('%Ã‘%')
+
+	update #AutorizacionEstudiosTemp
+	set area = replace(area,'Âº','°'),
+		prestador = REPLACE (prestador,'Âº', '°'),
+		estudio = REPLACE (estudio,'Âº', '°'),
+		plan_ = REPLACE(plan_,'Âº', '°')
+	where area like ('%Âº%') or prestador like ('%Âº%') or
+			estudio like ('%Âº%') or plan_ like ('%Âº%')
 	
 	
 	delete from #AutorizacionEstudiosTemp   --elimino si hay algun null en la temporal
