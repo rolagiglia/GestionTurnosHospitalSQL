@@ -18,20 +18,53 @@ execute  datos_paciente.insertarPaciente 'carla', 'gonzalez','unapellido','07/08
 go
 execute  datos_paciente.insertarPaciente 'juan', 'perez','apellidomaterno','07/12/1987','dni',33333333,'masculino','hombre','argentino','','juan@juan.com', 1154678900,22222222,'' ,'medico'
 go
---comprobamos que no inserta dni duplicados
-execute  datos_paciente.insertarPaciente 'pedro', 'anibal','apellidomaterno','07/10/1987','dni',33333333,'masculino','hombre','argentino','',' ', '','','' ,'administracion'
+--comprobamos que no inserta dni duplicados, ni nombres, apellidos, tipo de documentos o generos no validos o vacios
+execute  datos_paciente.insertarPaciente '', '','apellidomaterno','07/10/1987','nn',33333333,'genero','hombre','argentino','',' ', '','','' ,'administracion'
 go
 
+--eliminamos paciente con borrado logico. cancela todos sus turnos
+execute datos_paciente.eliminarPaciente 33333333
+go
+
+--reactivamos el paciente borrado. 
+execute datos_paciente.modificarBorradoDePaciente 33333333
+go
+--tratamos de reactivar un paciente que no existe. nos informa que no es posible
+execute datos_paciente.modificarBorradoDePaciente 22222222
+go
+
+--crea usuario web, contrasenia invalida
+execute  datos_paciente.insertarUsuario 33333333, 'Novalida'
+go
 --crea usuario web
 execute  datos_paciente.insertarUsuario 33333333, 'unaContrasenia'
 go
 -- no inserta usuarios duplicados
 execute  datos_paciente.insertarUsuario 33333333, 'unaContrasenia'
 go
---si el paciente no existe no lo inserta en usuario
+--
+--si el paciente no existe no lo crea el usuario
 execute  datos_paciente.insertarUsuario 9999999, 'unaContrasenia'
 go
+-- elimina usuario
+execute datos_paciente.eliminarUsuario 33333333
+go
+--si no existe caundo elimina lo informa
+execute datos_paciente.eliminarUsuario 33333333
+go
+--crea usuario web
+execute  datos_paciente.insertarUsuario 33333333, 'unaContrasenia'
+go
+--modificar contrasenia de usuario. no valida
+execute datos_paciente.modificarContraseniaUsuario 33333333, ' '
+go
+--modificar contrasenia-valida
+execute datos_paciente.modificarContraseniaUsuario 33333333, 'otraContrasenia'
+go
 
+--no inserta domicilios sin calle, pais, localidad o provincia
+exec datos_paciente.insertarDomicilio  '',2222,'','',1704,'','bs as', 'la matanza', 33333333
+go
 --inserta domicilio
 exec datos_paciente.insertarDomicilio  'rivadavia',2222,'','',1704,'argentina','bs as', 'la matanza', 33333333
 go
@@ -42,9 +75,7 @@ go
 exec datos_paciente.insertarDomicilio  'rivadavia',2222,'','',1704,'argentina','bs as', 'la matanza', 9999999  
 go
 
-
 --insertar prestador
-
 exec comercial.insertarPrestador  'OSDEPYM'    --nombre de prestador y 1 para activo 
 GO
 exec comercial.insertarPrestador  'OSDEPYM'   -- no los inserta repetidos

@@ -7,7 +7,7 @@ ALUMNOS:
 	ARAGON, RODRIGO EZEQUIEL 43509985
 	LA GIGLIA RODRIGO ARIEL DNI 33334248
 */
-create database Com5600G16 collate SQL_Latin1_General_CP1_CI_AS;
+create database Com5600G16 collate Modern_Spanish_CI_AS;
 go
 
 use Com5600G16;
@@ -19,11 +19,11 @@ create schema importacion
 go
 create table datos_paciente.Paciente (
 	id_historia_clinica int primary key identity(1,1),
-    nombre varchar(30),
-    apellido varchar(35),
+    nombre varchar(30) check(ltrim(rtrim(nombre))<>'' and ltrim(rtrim(nombre)) is not null),
+    apellido varchar(35) check(ltrim(rtrim(apellido))<>'' and ltrim(rtrim(apellido)) is not null),
     apellido_materno varchar(35),
     fecha_nacimiento date,
-    tipo_documento varchar(10),
+    tipo_documento varchar(10) check(tipo_documento in('DNI','PAS')),
     nro_documento int NOT NULL UNIQUE,
     sexo_biologico varchar(10) check (lower(rtrim(ltrim(sexo_biologico))) in('masculino','femenino')),
     genero varchar(10),
@@ -43,7 +43,7 @@ go
 
 CREATE table datos_paciente.Usuario (
 	id_usuario int PRIMARY KEY,  -- -- se deben generar a partir del dni
-    contrasenia varchar(20),
+    contrasenia varchar(20) NOT NULL check(and len(contrasenia)>8),--contrasenia mas de 8 caracteres
     fecha_de_creacion date default(convert(date,getdate())),  -- fecha actual default
     id_paciente int,
     CONSTRAINT fk_paciente_usuario foreign key  (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
@@ -52,14 +52,14 @@ go
 
 CREATE table datos_paciente.Domicilio(
 	id_domicilio int PRIMARY KEY identity(1,1), 
-    calle varchar(50),
-    numero int,
+    calle varchar(50) NOT NULL check(ltrim(rtrim(calle))<>''),
+    numero int NOT NULL,
     piso int,
     departamento char(1), -- puede ser letra o numero
     cp smallint,
-    pais varchar(30),
-    provincia varchar(50),
-    localidad varchar(50),
+    pais varchar(50) NOT NULL check(ltrim(rtrim(pais))<>''),
+    provincia varchar(50) NOT NULL check(ltrim(rtrim(provincia))<>''),
+    localidad varchar(50) NOT NULL check(ltrim(rtrim(localidad))<>''),
     id_paciente int,
     CONSTRAINT fk_paciente_domicilio foreign key  (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
 );
@@ -197,10 +197,10 @@ go
 
 create table servicio.autorizacion_de_estudio (
 		id int primary key identity(1,1),
-		area nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		estudio nvarchar(200)COLLATE SQL_Latin1_General_CP1_CI_AS,
-		prestador nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		plan_ nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		area nvarchar(50) ,
+		estudio nvarchar(200),
+		prestador nvarchar(50) ,
+		plan_ nvarchar(50) ,
 		[Porcentaje Cobertura] int,
 		costo decimal(10,2),
 		[Requiere autorizacion] bit

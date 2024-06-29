@@ -36,31 +36,56 @@ create or alter procedure datos_paciente.insertarPaciente
 )
 as
 begin
-	if(@Sexo_biologico = 'masculino' collate SQL_Latin1_General_CP1_CI_AS or
-		@Sexo_biologico = 'femenino' collate SQL_Latin1_General_CP1_CI_AS)
-		insert into datos_paciente.Paciente (nombre, apellido, apellido_materno, fecha_nacimiento, tipo_documento,
-										nro_documento, sexo_biologico, genero, nacionalidad, dir_foto_perfil,
-										mail,tel_fijo,tel_alternativo,tel_laboral, usuario_actualizacion) 
-										values 
-		(
-			 (ltrim(rtrim(@Nombre))),
-			(ltrim(rtrim(@Apellido))),
-			(ltrim(rtrim(@Apellido_materno))),
-			@Fecha_nacimiento,
-			@Tipo_documento,
-			@NroDoc,
-			(ltrim(rtrim(@Sexo_biologico))),
-			(ltrim(rtrim(@Genero))),
-			(ltrim(rtrim(@Nacionalidad))),
-			(ltrim(rtrim(@Dir_foto_perfil))),
-			(ltrim(rtrim(@Mail))),
-			(ltrim(rtrim(@Tel_fijo))),
-			(ltrim(rtrim(@Tel_alternativo))),
-			(ltrim(rtrim(@Tel_laboral))),
-			(ltrim(rtrim(@Usuario_actualizacion)))
-		)
-		else 
-		RAISERROR('ERROR NO SE AGREGO EL PACIENTE',5,5,'')
+	declare @error varchar(150)
+	set @error = ' '
+	if(ltrim(rtrim(@Sexo_biologico)) <> 'masculino' collate Modern_Spanish_CI_AS and            
+		ltrim(rtrim(@Sexo_biologico)) <> 'femenino' collate Modern_Spanish_CI_AS)
+		set @error = '| sexo biologico | '
+	else
+		if(ltrim(rtrim(@nombre))='' or ltrim(rtrim(@nombre)) is null)              
+			set @error = @error + '| nombre | ' 
+		
+		if(ltrim(rtrim(@apellido))='' or ltrim(rtrim(@apellido)) is null)               
+			set @error = @error +'| apellido | '
+		
+		if(@NroDoc is null or @NroDoc<10000000 or @NroDoc>999999999)
+			set @error = @error + '| nro documento | '
+		
+		if(exists(select 1			-- verifica que el nro doc no se repita
+					from datos_paciente.Paciente
+					where nro_documento=@NroDoc))
+			set @error = @error + '| nro documento ya existe | '
+			
+		if(@Tipo_documento not in('DNI','PAS'))
+			set @error = @error + '| tipo de documento | '	
+
+		if(@error = ' ')
+			insert into datos_paciente.Paciente (nombre, apellido, apellido_materno, fecha_nacimiento, tipo_documento,
+													nro_documento, sexo_biologico, genero, nacionalidad, dir_foto_perfil,
+													mail,tel_fijo,tel_alternativo,tel_laboral, usuario_actualizacion) 
+						values 
+						(
+						 (ltrim(rtrim(@Nombre))),
+						(ltrim(rtrim(@Apellido))),
+						(ltrim(rtrim(@Apellido_materno))),
+						@Fecha_nacimiento,
+						@Tipo_documento,
+						@NroDoc,
+						(ltrim(rtrim(@Sexo_biologico))),
+						(ltrim(rtrim(@Genero))),
+						(ltrim(rtrim(@Nacionalidad))),
+						(ltrim(rtrim(@Dir_foto_perfil))),
+						(ltrim(rtrim(@Mail))),
+						(ltrim(rtrim(@Tel_fijo))),
+						(ltrim(rtrim(@Tel_alternativo))),
+						(ltrim(rtrim(@Tel_laboral))),
+						(ltrim(rtrim(@Usuario_actualizacion)))
+						)
+		else
+			begin
+				set @error = 'Valor/es ingresado/s no valido/s:  '+ @error
+				RAISERROR(@error,5,5,'')
+			end
 
 end
 go
@@ -74,39 +99,38 @@ create or alter procedure datos_paciente.insertarUsuario     --recibe la dni del
 )
 as
 begin
-
-	if(@dni_paciente in (	
-		select nro_documento
-		from datos_paciente.Paciente))
-	begin
-		declare @Id_paciente int
-	    set @Id_paciente = (select id_historia_clinica 
-							from datos_paciente.Paciente
-							where nro_documento = @dni_paciente)
-		insert into datos_paciente.Usuario (id_usuario,contrasenia,id_paciente)
-			values
-			(
-				@dni_paciente,   --el sistema genera usuario con el nro de dni
-				@contrasenia,
-				@Id_paciente
-			)
-	end
-	else 
-		RAISERROR('DNI INEXISTENTE',5,5,'')
+	declare @id_paciente int
+	set @id_paciente = (select id_historia_clinica from datos_paciente.Paciente where nro_documento=@dni_paciente and borrado=0)
+	if(@id_paciente is null)	
+		RAISERROR('NO EXISTE UN PACIENTE ACTIVO CON EL DNI INGRESADO',5,5,'')
+	else
+		if(exists(select 1 from datos_paciente.Usuario where id_paciente=@id_paciente))  --ya existe usuario creado
+			RAISERROR('YA EXISTE EL USUARIO',5,5,'')
+		else
+			if(@contrasenia is null or  len(@contrasenia)<=8)           --contrasenia de menos de 8 caracteres o null
+				RAISERROR('PASSWORD INVALIDA',5,5,'')
+			else
+				insert into datos_paciente.Usuario (id_usuario,contrasenia,id_paciente)
+					values
+					(
+						@dni_paciente,   --el usuario es el nro de dni
+						@contrasenia,
+						@id_paciente
+					)
 end
 go
 
 
 create or alter procedure datos_paciente.insertarDomicilio
 ( 
-    @calle varchar(10),
+    @calle varchar(50),
     @numero int,
     @piso int,
     @departamento char(1), -- puede ser letra o numero
     @cp smallint,
-    @pais varchar(15),
-    @provincia varchar(20),
-    @localidad varchar(20),
+    @pais varchar(50),
+    @provincia varchar(50),
+    @localidad varchar(50),
     @dni_paciente int
     
 )
@@ -115,26 +139,28 @@ begin
 	declare @id_paciente int
 	set @id_paciente = (select id_historia_clinica
 						from datos_paciente.Paciente
-						where nro_documento=@dni_paciente)
-	if (@id_paciente is not null)
-	and @id_paciente not in (select id_paciente
-							 from datos_paciente.Domicilio) --no inserta duplicados
-	begin
-		insert into datos_paciente.Domicilio values
-		(
-		    @calle,
-			@numero,
-			@piso,
-			@departamento,
-			@cp,
-			@pais,
-			@provincia,
-			@localidad,
-			@id_paciente
-		)
-	end
-	else 
-		RAISERROR('ERROR PACIENTE NO EXISTE O YA TIENE DOMICILIO',5,5,'')
+						where nro_documento=@dni_paciente and borrado=0)
+	if (@id_paciente is null)
+		RAISERROR('NO EXISTE UN PACIENTE ACTIVO CON EL DNI INGRESADO',5,5,'')
+	else
+		if(exists(select 1 from datos_paciente.Domicilio where id_paciente=@id_paciente))
+			RAISERROR('YA POSEE UN DOMICILIO',5,5,'')
+		else
+			if(ltrim(rtrim(@pais))='' or ltrim(rtrim(@localidad))='' or ltrim(rtrim(@provincia))='' or ltrim(rtrim(@calle))='')
+				RAISERROR('DOMICILIO NO VALIDO',5,5,'')
+			else
+				insert into datos_paciente.Domicilio values
+				(
+					@calle,
+					@numero,
+					@piso,
+					@departamento,
+					@cp,
+					@pais,
+					@provincia,
+					@localidad,
+					@id_paciente
+				)
 end
 go
 
@@ -542,6 +568,23 @@ END
 go
 -----MODIFIES----------------------
 
+create or alter procedure datos_paciente.modificarBorradoDePaciente   --reactivar paciente con borrado logico
+(
+	@nro_documento int
+)
+as
+begin
+		
+		if(exists(select 1		
+					from datos_paciente.Paciente
+					where nro_documento=@nro_documento and borrado=1))
+			update datos_paciente.Paciente
+			set borrado=0
+			where nro_documento=@nro_documento
+		else
+			RAISERROR('NO EXISTE UN PACIENTE DADO DE BAJA CON EL DNI INGRESADO',5,5,'')
+end
+go
 
 create or alter procedure datos_paciente.modificarFotoPaciente
 (
@@ -578,21 +621,21 @@ create or alter procedure datos_paciente.modificarTelPaciente
 as
 begin
 	
-	if(@tipo = 'fijo' collate SQL_Latin1_General_CP1_CI_AS)
+	if(@tipo = 'fijo' collate Modern_Spanish_CI_AS)
 	begin
 		update datos_paciente.Paciente
 		set tel_fijo = @tel
 		where nro_documento = @nro_documento
 	end
 
-	if(@tipo = 'alternativo' collate SQL_Latin1_General_CP1_CI_AS)
+	if(@tipo = 'alternativo' collate Modern_Spanish_CI_AS)
 	begin
 		update datos_paciente.Paciente
 		set tel_alternativo = @tel
 		where nro_documento = @nro_documento
 	end
 
-	if(@tipo = 'laboral' collate SQL_Latin1_General_CP1_CI_AS)
+	if(@tipo = 'laboral' collate Modern_Spanish_CI_AS)
 	begin
 		update datos_paciente.Paciente
 		set tel_laboral = @tel
@@ -618,40 +661,56 @@ create or alter procedure datos_paciente.modificarContraseniaUsuario
 as
 begin
 
-	update datos_paciente.Usuario
-	set contrasenia = @contrasenia
-	where id_usuario = @id_usuario
-
+		if(not exists(select 1 from datos_paciente.Usuario where id_usuario=@id_usuario))  --no existe usuario creado
+			RAISERROR('NO EXISTE EL USUARIO',5,5,'')
+		else
+			if(@contrasenia is null or  len(@contrasenia)<=8)
+				RAISERROR('PASSWORD INVALIDA',5,5,'')
+			else
+				update datos_paciente.Usuario
+				set contrasenia = @contrasenia
+				where id_usuario = @id_usuario
 end
 go
 
 
 create or alter procedure datos_paciente.modificarDomicilio
 (
-    @calle varchar(10),
+    @calle varchar(50),
     @numero int,
     @piso int,
     @departamento char(1), -- puede ser letra o numero
     @cp smallint,
-    @pais varchar(15),
-    @provincia varchar(20),
-    @localidad varchar(20),
+    @pais varchar(50),
+    @provincia varchar(50),
+    @localidad varchar(50),
     @nro_documento int
 )
 as
 begin
 	declare @id_paciente int
-	set @id_paciente= (select id_historia_clinica from datos_paciente.Paciente where nro_documento = @nro_documento)
-	update datos_paciente.Domicilio
-	set calle = @calle,
-		numero = @numero,
-		piso = @piso,
-		departamento = @departamento,
-		cp = @cp,
-		localidad = @localidad,
-		provincia = @provincia,
-		pais = @pais
-	where id_paciente = @id_paciente
+	set @id_paciente = (select id_historia_clinica
+						from datos_paciente.Paciente
+						where nro_documento=@nro_documento and borrado=0)
+	if (@id_paciente is null)
+		RAISERROR('NO EXISTE UN PACIENTE ACTIVO CON EL DNI INGRESADO',5,5,'')
+	else
+		if(not exists(select 1 from datos_paciente.Domicilio where id_paciente=@id_paciente))
+			RAISERROR('NO POSEE UN DOMICILIO',5,5,'')
+		else
+			if(ltrim(rtrim(@pais))='' or ltrim(rtrim(@localidad))='' or ltrim(rtrim(@provincia))='' or ltrim(rtrim(@calle))='')
+				RAISERROR('DOMICILIO NO VALIDO',5,5,'')
+			else
+				update datos_paciente.Domicilio
+				set calle = ltrim(rtrim(@calle)),
+					numero = @numero,
+					piso = @piso,
+					departamento = @departamento,
+					cp = @cp,
+					localidad = ltrim(rtrim(@localidad)),
+					provincia = ltrim(rtrim(@provincia)),
+					pais = ltrim(rtrim(@pais))
+				where id_paciente = @id_paciente
 
 end
 go
@@ -731,10 +790,10 @@ create or alter procedure servicio.modificarEstadoTurno
 as
 begin
 
-	if(@nombre_estado = 'reservado' collate Latin1_General_100_CI_AS or
-		@nombre_estado = 'atendido' collate Latin1_General_100_CI_AS or
-		@nombre_estado = 'ausente' collate Latin1_General_100_CI_AS or
-		@nombre_estado = 'cancelado' collate Latin1_General_100_CI_AS)
+	if(@nombre_estado = 'reservado' collate Modern_Spanish_CI_AS or
+		@nombre_estado = 'atendido' collate Modern_Spanish_CI_AS or
+		@nombre_estado = 'ausente' collate Modern_Spanish_CI_AS or
+		@nombre_estado = 'cancelado' collate Modern_Spanish_CI_AS)
 	begin
 		update servicio.Estado_turno
 		set nombre_estado = @nombre_estado
@@ -903,17 +962,22 @@ as
 begin
 	declare @id_paciente int,
 			@id_estado int
-	set @id_paciente=(select id_historia_clinica from datos_paciente.Paciente where nro_documento=@nro_documento)
+	set @id_paciente=(select id_historia_clinica from datos_paciente.Paciente where nro_documento=@nro_documento and borrado=0)
 	set @id_estado =(select id_estado from servicio.Estado_turno where nombre_estado='cancelado')
 	
-	update datos_paciente.Paciente
-	set borrado=1							 -- 1 indica que el paciente esta borrado
-	where id_historia_clinica=@id_paciente
+	if(@id_paciente is not null)  --si existe el paciente y esta borrado
+	begin
+		update datos_paciente.Paciente
+		set borrado=1							 -- 1 indica que el paciente esta borrado
+		where id_historia_clinica=@id_paciente
 
-	update servicio.Reserva_de_turno_medico  --borra los turnos que tenia asignados
-	set borrado=1,
-		id_estado_turno=@id_estado	
-	where id_paciente=@id_paciente
+		update servicio.Reserva_de_turno_medico  --borra los turnos que tenia asignados
+		set borrado=1,
+			id_estado_turno=@id_estado	
+		where id_paciente=@id_paciente
+	end
+	else
+		RAISERROR('NO EXISTE UN PACIENTE ACTIVO CON EL DNI INGRESADO',5,5,'')	
 end
 go
 
@@ -1018,10 +1082,11 @@ create or alter procedure datos_paciente.eliminarUsuario
 )
 as
 begin
-
-	delete datos_paciente.Usuario
-	where id_usuario = @id_usuario
-
+	if(exists(select 1 from datos_paciente.Usuario where id_usuario=@id_usuario))
+		delete datos_paciente.Usuario
+		where id_usuario = @id_usuario
+	else
+		RAISERROR('NO EXISTE EL USUARIO',5,5,'')
 end
 go
 
@@ -1033,10 +1098,11 @@ create or alter procedure datos_paciente.eliminarDomicilio
 )
 as
 begin
-
-	delete datos_paciente.Domicilio
-	where id_domicilio = @id_domicilio
-
+	if(@id_domicilio is null or not exists(select 1 from datos_paciente.Domicilio where id_domicilio=@id_domicilio))
+		RAISERROR('NO EXISTE EL ID DE DOMICILIO',5,5,'')
+	else
+		delete datos_paciente.Domicilio
+		where id_domicilio = @id_domicilio
 end
 go
 
