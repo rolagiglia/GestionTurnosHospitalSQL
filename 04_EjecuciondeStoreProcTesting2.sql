@@ -21,6 +21,9 @@ go
 --comprobamos que no inserta dni duplicados, ni nombres, apellidos, tipo de documentos o generos no validos o vacios
 execute  datos_paciente.insertarPaciente '', '','apellidomaterno','07/10/1987','nn',33333333,'genero','hombre','argentino','',' ', '','','' ,'administracion'
 go
+--no inserta fechas de nacimiento mayores a la fecha actual
+execute  datos_paciente.insertarPaciente 'juan', 'perez','apellidomaterno','10/10/2030','dni',66666666,'masculino','hombre','argentino','','juan@juan.com', 1154678900,22222222,'' ,'medico'
+go
 
 --eliminamos paciente con borrado logico. cancela todos sus turnos
 execute datos_paciente.eliminarPaciente 33333333
@@ -82,6 +85,12 @@ exec comercial.insertarPrestador  'OSDEPYM'   -- no los inserta repetidos
 GO
 exec comercial.insertarPrestador  ''   -- no inserta vacios
 GO
+--eliminar prestador
+exec comercial.eliminarPrestador 'OSDEPYM'
+go
+--reactivar prestador
+exec comercial.reactivarPrestador 'OSDEPYM'
+go
 
 --insertar plan
 exec comercial.insertarPlanPrestador 'OSDEPYM', 'PLAN 800'  --NOMBRE prestador y nombre de plan
@@ -93,7 +102,6 @@ go
 exec comercial.insertarPlanPrestador '', 'PLAN 500'  --no inserta preSTADORES vacios
 go
 
-
 --insertarCobertura
 exec datos_paciente.insertarCobertura 'dirimagen', 23456, 'OSDEPYM', 'PLAN 800', 33333333  --dir_imagen_credencial, nro_socio, prestador,plan,doc_paciente
 go
@@ -101,12 +109,20 @@ exec datos_paciente.insertarCobertura 'dirimagen', 23456, 'OSDEPYM', 'PLAN 800',
 go
 exec datos_paciente.insertarCobertura 'dirimagen', 23456, 'OS', 'PLAN 100', 1111111 -- no inserta coberturas ni planes que no existan 
 go
+--eliminar cobertura
+exec datos_paciente.eliminarCoberturaPaciente 33333333
+go
+--insertarCobertura
+exec datos_paciente.insertarCobertura 'dirimagen', 23456, 'OSDEPYM', 'PLAN 800', 33333333  --dir_imagen_credencial, nro_socio, prestador,plan,doc_paciente
+go
 
 -- insertarEstudio
 
 exec servicio.insertarEstudio 33333333,'24/02/2025', 'COLONOSCOPIA','pendiente','','' --dni_paciente,fecha_estudio,nombre_estudio,autorizado, imagen_resultado,documento_resultado
 go
 exec servicio.insertarEstudio 42345678,'24/02/2025', 'COLONOSCOPIA','pendiente','','' 
+go
+exec servicio.insertarEstudio '','24/02/2025', '','','','' --no inserta valores no validos
 go
 exec servicio.insertarEstudio 33333333,'24/02/2025', 'COLONOSCOPIA','pendiente','','' --no inserta duplicados
 go 

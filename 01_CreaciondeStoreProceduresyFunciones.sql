@@ -38,8 +38,10 @@ as
 begin
 	declare @error varchar(150)
 	set @error = ' '
-	if(ltrim(rtrim(@Sexo_biologico)) <> 'masculino' collate Modern_Spanish_CI_AS and            
-		ltrim(rtrim(@Sexo_biologico)) <> 'femenino' collate Modern_Spanish_CI_AS)
+	
+
+	if(ltrim(rtrim(@Sexo_biologico)) <> 'masculino' and            
+		ltrim(rtrim(@Sexo_biologico)) <> 'femenino' )
 		set @error = '| sexo biologico | '
 	else
 		if(ltrim(rtrim(@nombre))='' or ltrim(rtrim(@nombre)) is null)              
@@ -50,7 +52,10 @@ begin
 		
 		if(@NroDoc is null or @NroDoc<10000000 or @NroDoc>999999999)
 			set @error = @error + '| nro documento | '
-		
+
+		if(@Fecha_nacimiento is not null and @Fecha_nacimiento>(convert(date,getdate()))) --no inserta fecha mayor a la actual
+			set @error = @error + '| fecha |'
+
 		if(exists(select 1			-- verifica que el nro doc no se repita
 					from datos_paciente.Paciente
 					where nro_documento=@NroDoc))
@@ -99,24 +104,30 @@ create or alter procedure datos_paciente.insertarUsuario     --recibe la dni del
 )
 as
 begin
+	declare @error varchar(150)
+	set @error = ' '
+
 	declare @id_paciente int
 	set @id_paciente = (select id_historia_clinica from datos_paciente.Paciente where nro_documento=@dni_paciente and borrado=0)
 	if(@id_paciente is null)	
-		RAISERROR('NO EXISTE UN PACIENTE ACTIVO CON EL DNI INGRESADO',5,5,'')
+		set @error = @error + '| NO EXISTE UN PACIENTE ACTIVO CON EL DNI INGRESADO | '
+	if(exists(select 1 from datos_paciente.Usuario where id_paciente=@id_paciente))  --ya existe usuario creado
+		set @error = @error +'| YA EXISTE EL USUARIO |'
+	if(@contrasenia is null or  len(@contrasenia)<=8)           --contrasenia de menos de 8 caracteres o null
+		set @error = @error +'| PASSWORD INVALIDA |'
+	if(@error = ' ')
+		insert into datos_paciente.Usuario (id_usuario,contrasenia,id_paciente)
+			values
+			(
+				@dni_paciente,   --el usuario es el nro de dni
+				@contrasenia,
+				@id_paciente
+			)
 	else
-		if(exists(select 1 from datos_paciente.Usuario where id_paciente=@id_paciente))  --ya existe usuario creado
-			RAISERROR('YA EXISTE EL USUARIO',5,5,'')
-		else
-			if(@contrasenia is null or  len(@contrasenia)<=8)           --contrasenia de menos de 8 caracteres o null
-				RAISERROR('PASSWORD INVALIDA',5,5,'')
-			else
-				insert into datos_paciente.Usuario (id_usuario,contrasenia,id_paciente)
-					values
-					(
-						@dni_paciente,   --el usuario es el nro de dni
-						@contrasenia,
-						@id_paciente
-					)
+		begin
+			set @error = 'ERROR:  '+ @error
+			RAISERROR(@error,5,5,'')
+		end	
 end
 go
 
@@ -136,31 +147,38 @@ create or alter procedure datos_paciente.insertarDomicilio
 )
 as
 begin
+	declare @error varchar(150)
+	set @error = ' '
 	declare @id_paciente int
 	set @id_paciente = (select id_historia_clinica
 						from datos_paciente.Paciente
 						where nro_documento=@dni_paciente and borrado=0)
 	if (@id_paciente is null)
-		RAISERROR('NO EXISTE UN PACIENTE ACTIVO CON EL DNI INGRESADO',5,5,'')
-	else
-		if(exists(select 1 from datos_paciente.Domicilio where id_paciente=@id_paciente))
-			RAISERROR('YA POSEE UN DOMICILIO',5,5,'')
-		else
-			if(ltrim(rtrim(@pais))='' or ltrim(rtrim(@localidad))='' or ltrim(rtrim(@provincia))='' or ltrim(rtrim(@calle))='')
-				RAISERROR('DOMICILIO NO VALIDO',5,5,'')
-			else
-				insert into datos_paciente.Domicilio values
-				(
-					@calle,
-					@numero,
-					@piso,
-					@departamento,
-					@cp,
-					@pais,
-					@provincia,
-					@localidad,
-					@id_paciente
+		set @error = @error + '| NO EXISTE UN PACIENTE ACTIVO CON EL DNI INGRESADO |'
+	if (@CP is NOT null and @CP > 10000)
+		set @error = @error + '| CODIGO POSTAL ERRONEO |'
+	if(exists(select 1 from datos_paciente.Domicilio where id_paciente=@id_paciente))
+		set @error = @error + '| YA POSEE UN DOMICILIO |'
+	if(ltrim(rtrim(@pais))='' or ltrim(rtrim(@localidad))='' or ltrim(rtrim(@provincia))='' or ltrim(rtrim(@calle))='')
+		set @error = @error + '| DOMICILIO NO VALIDO |'
+	if(@error = ' ')
+		insert into datos_paciente.Domicilio values
+		(
+			@calle,
+			@numero,
+			@piso,
+			@departamento,
+			@cp,
+			@pais,
+			@provincia,
+			@localidad,
+			@id_paciente
 				)
+	else
+		begin
+			set @error = 'ERROR:  '+ @error
+			RAISERROR(@error,5,5,'')
+		end	
 end
 go
 
@@ -171,13 +189,32 @@ create or alter procedure comercial.insertarPrestador  --por default el prestado
 )
 as
 begin
-		if not exists(select @nombre_prestador from comercial.Prestador ) and @nombre_prestador is not null and  @nombre_prestador <>''   --evito insercion de prestadores repetidos
-		insert into comercial.Prestador (nombre_prestador) values
-		(
-			 upper(ltrim(rtrim(@nombre_prestador)))
-		)
+		declare @error varchar(150)
+		set @error = ' '
+		set @nombre_prestador = ltrim(rtrim(@nombre_prestador))
+		if( @nombre_prestador is null or  ltrim(rtrim(@nombre_prestador)) ='')
+			set @error = @error + '| nombre no valido |'
+		if exists(select 1 from comercial.Prestador where nombre_prestador=@nombre_prestador and borrado=0)    --evito insercion de prestadores repetidos
+			set @error = @error + '| ya existe el prestador |'
+		if(@error=' ')
+		begin
+			if exists(select 1 from comercial.Prestador where nombre_prestador=@nombre_prestador and borrado=1) --si existe pero esta borrado lo reactiva
+			begin
+				update comercial.Prestador
+				set borrado=0
+				where nombre_prestador=@nombre_prestador
+			end
+			else                                                                  --si no existe
+				insert into comercial.Prestador (nombre_prestador) values
+				(
+				upper(@nombre_prestador)
+				)
+		end
 		else 
-		RAISERROR('ERROR EL PRESTADOR YA EXISTE o el NOMBRE ES INVALIDO',5,5,'')
+			begin
+			set @error = 'ERROR:  '+ @error
+			RAISERROR(@error,5,5,'')
+		end	
 end
 go
 
@@ -185,33 +222,43 @@ create or alter	procedure comercial.insertarPlanPrestador
 (                
     @nombre_prestador varchar(50),
     @nombre_plan varchar (50)
-    
 )
 as
 begin
+	declare @error varchar(150)
+	set @error = ' '
+	set @nombre_plan=ltrim(rtrim(@nombre_plan))
+	set @nombre_prestador=ltrim(rtrim(@nombre_prestador))
 	--verifico que exista el prestador, evito que se inserte un plan repetido o vacio
 	declare @id_prestador int
 	set @id_prestador = (select id_prestador 
 						from comercial.Prestador
 						where nombre_prestador=@nombre_prestador and borrado = 0 )
-	if(@id_prestador is not null)
-	begin		
-		if( @nombre_plan not in(select nombre_plan 
+
+	if(@id_prestador is null)			--debe existir el prestador
+		set @error = @error + '| no existe un prestador activo con ese nombre |'	
+	if(@nombre_plan='')
+		set @error = @error +'| nombre de plan no valido |'	
+	if(@error=' ')
+		if(@nombre_plan in(select nombre_plan 
 								from comercial.Plan_Prestador 
-								where id_prestador=@id_prestador) )
-			insert into comercial.Plan_Prestador (id_prestador,nombre_plan) values (@id_prestador, upper(ltrim(rtrim(@nombre_plan))))
+								where id_prestador=@id_prestador and borrado=0))
+			RAISERROR('| Ya existe un plan activo con ese nombre |',5,5,'')
 		else
 			if(@nombre_plan in(select nombre_plan 
-								from comercial.Plan_Prestador 
-								where id_prestador=@id_prestador and borrado=1))
-				update comercial.Plan_Prestador
+									from comercial.Plan_Prestador 
+									where id_prestador=@id_prestador and borrado=1))
+				update comercial.Plan_Prestador  --si existe y esta borrado lo reactivo
 				set borrado=0
 				where nombre_plan=@nombre_plan
 			else
-				RAISERROR('YA EXISTE EL PLAN',5,5,'')
-	end
-	else 
-		RAISERROR('ERROR NO EXISTE EL PRESTADOR',5,5,'')
+				insert into comercial.Plan_Prestador (id_prestador,nombre_plan) values
+				(@id_prestador, upper(@nombre_plan))
+	else
+		begin
+			set @error = 'ERROR : ' + @error
+			RAISERROR(@error,5,5,'')
+		end
 end
 go
 
@@ -230,28 +277,37 @@ begin
 	declare @id_prestador int,
 			@id_plan int,
 			@id_paciente int
-
+	declare @error varchar(150)
+	set @error = ' '
 	set @id_prestador = (select id_prestador from comercial.Prestador where borrado=0 and nombre_prestador=@nombre_prestador)
 	set @id_plan = (select id_plan from comercial.Plan_Prestador where borrado=0 and nombre_plan=@nombre_plan and id_prestador=@id_prestador)
 	set @id_paciente = (select id_historia_clinica from datos_paciente.Paciente where borrado=0 and nro_documento=@nro_documento)
 	
 	--verifica que exista el prestador, el plan y el paciente
-	if(@id_prestador is not null and     
-		@id_plan is not null and
-		@id_paciente is not null and 
-		@id_paciente not in(select id_paciente from datos_paciente.Cobertura))       --no permite la insercion de mas de una cobertura para un paciente
+	if(@nro_socio is null or @nro_socio < 1)
+		set @error = @error + '| nro de socio no valido |'
+	if(@id_prestador is null)
+		set @error = @error + '| nombre prestador no valido |'
+	if(@id_plan is null)
+		set @error = @error + '| nombre plan no valido |'
+	if(@id_paciente is null)
+		set @error = @error + '| dni paciente no valido |'
+	if(@id_paciente in(select id_paciente from datos_paciente.Cobertura))--no permite la insercion de mas de una cobertura para un paciente
+		set @error = @error + '| el paciente ya tiene cobertura |'
+	if(@error=' ')
+		insert into datos_paciente.Cobertura(dir_imagen_credencial,nro_socio,id_prestador,id_plan,id_paciente) values 
+		(    
+			ltrim(rtrim(@dir_imagen_credencial)),
+			@nro_socio,      
+			@id_prestador,
+			@id_plan,
+			@id_paciente
+		)
+	else
 		begin
-			insert into datos_paciente.Cobertura(dir_imagen_credencial,nro_socio,id_prestador,id_plan,id_paciente) values 
-				(    
-					ltrim(rtrim(@dir_imagen_credencial)),
-					@nro_socio,      
-					@id_prestador,
-					@id_plan,
-					@id_paciente
-				)
+			set @error = 'ERROR : ' + @error
+			RAISERROR(@error,5,5,'')
 		end
-		else 
-		RAISERROR('ERROR VALORES INGRESADOS INCORRECTOS o DUPLICADOS',5,5,'')
 end
 go
 
@@ -260,7 +316,7 @@ create or alter	procedure servicio.insertarEstudio
 (   
 	@nro_documento int,
     @fecha_estudio date,
-    @nombre_estudio nvarchar(200),
+    @nombre_estudio varchar(200),
     @autorizado varchar(10),
 	@imagen_resultado varchar(100),
 	@documento_resultado varchar(100)
@@ -268,20 +324,39 @@ create or alter	procedure servicio.insertarEstudio
 )
 as
 begin
-	declare @id_paciente int
+	declare @id_paciente int,
+			@error varchar(150)
+	set @error = ' '
+	set @nombre_estudio = ltrim(rtrim(@nombre_estudio))
+	set @autorizado = ltrim(rtrim(@autorizado))
 	set @id_paciente = (select id_historia_clinica from datos_paciente.Paciente where borrado=0 and nro_documento=@nro_documento)
-	if(@id_paciente is not null and (@id_paciente not in(select id_paciente from servicio.Estudio where fecha_estudio=@fecha_estudio and nombre_estudio=@nombre_estudio and borrado=0)))  --no permite mas de un estudio igual al mismo paciente en el mismo momento, y el paciente debe estar activo
-
-	insert into servicio.Estudio(fecha_estudio,nombre_estudio,autorizado,id_paciente,imagen_resultado,documento_resultado) values 
-	(    
-		@fecha_estudio,
-		ltrim(rtrim(@nombre_estudio)),
-		ltrim(rtrim(@autorizado)),
-		@id_paciente,
-		ltrim(rtrim(@imagen_resultado)),
-		ltrim(rtrim(@documento_resultado))
-	)else 
-		RAISERROR('ERROR NO EXISTE EL PACIENTE O ESTUDIO DUPLICADO',5,5,'')
+	if(@nombre_estudio is null or @nombre_estudio ='')
+		set @error = @error + '| nombre de estudio invalido |'
+	if(@autorizado is null or @autorizado='')
+		set @autorizado = 'pendiente'
+	if(@id_paciente is null)
+		set @error = @error + '| nro documento no valido |'
+	if(@fecha_estudio is null or @fecha_estudio = '')
+		set @error = @error + '| fecha no valida |'
+	if(exists(select 1 from servicio.Estudio 
+				where fecha_estudio=@fecha_estudio and 
+				nombre_estudio=@nombre_estudio and borrado=0))  --no permite mas de un estudio igual al mismo paciente en el mismo momento, y el paciente debe estar activo
+		set @error = @error + '| el paciente ya tiene otro turno asignado otro turno en la fecha indicada |'
+	if(@error=' ')
+		insert into servicio.Estudio(fecha_estudio,nombre_estudio,autorizado,id_paciente,imagen_resultado,documento_resultado) values 
+		(    
+			@fecha_estudio,
+			@nombre_estudio,
+			@autorizado,
+			@id_paciente,
+			ltrim(rtrim(@imagen_resultado)),
+			ltrim(rtrim(@documento_resultado))
+		)
+	else
+		begin
+			set @error = 'ERROR : ' + @error
+			RAISERROR(@error,5,5,'')
+		end
 end
 go
 
@@ -292,13 +367,19 @@ create or alter	procedure servicio.insertarEstadoTurno
 )
 as
 begin
-		if(not exists(select 1 from servicio.Estado_turno where nombre_estado=@nombre_estado))
-		insert into servicio.Estado_turno values 
-		(    
-			lower(ltrim(rtrim(@nombre_estado)))    --valores validos ('reservado','atendido', 'ausente', 'cancelado')
-		)
-		else 
-		RAISERROR('ERROR YA EXISTE EL ESTADO',5,5,'')
+		set @nombre_estado = ltrim(rtrim(@nombre_estado))
+		if(@nombre_estado not in('reservado','atendido', 'ausente', 'cancelado'))
+			RAISERROR('ERROR ESTADO NO VALIDO',5,5,'')
+		else
+		begin
+			if(not exists(select 1 from servicio.Estado_turno where nombre_estado=@nombre_estado))
+			insert into servicio.Estado_turno values 
+			(    
+				@nombre_estado    --valores validos ('reservado','atendido', 'ausente', 'cancelado')
+			)
+			else 
+			RAISERROR('ERROR YA EXISTE EL ESTADO',5,5,'')
+		end
 end
 go
 
@@ -621,21 +702,21 @@ create or alter procedure datos_paciente.modificarTelPaciente
 as
 begin
 	
-	if(@tipo = 'fijo' collate Modern_Spanish_CI_AS)
+	if(@tipo = 'fijo')
 	begin
 		update datos_paciente.Paciente
 		set tel_fijo = @tel
 		where nro_documento = @nro_documento
 	end
 
-	if(@tipo = 'alternativo' collate Modern_Spanish_CI_AS)
+	if(@tipo = 'alternativo')
 	begin
 		update datos_paciente.Paciente
 		set tel_alternativo = @tel
 		where nro_documento = @nro_documento
 	end
 
-	if(@tipo = 'laboral' collate Modern_Spanish_CI_AS)
+	if(@tipo = 'laboral')
 	begin
 		update datos_paciente.Paciente
 		set tel_laboral = @tel
@@ -716,45 +797,65 @@ end
 go
 
 
-create or alter procedure comercial.modificarPrestador
+create or alter procedure comercial.reactivarPrestador  --reactiva un prestador con borrado logico
 (
-	@nombre_prestador int,
-    @estado bit 
+	@nombre_prestador varchar(50)
 )
 as
 begin
-
-	if(@estado = 1 or
-		@estado = 0)
+	set @nombre_prestador=ltrim(rtrim(@nombre_prestador))
+	if(not exists(select 1 from comercial.Prestador where nombre_prestador=@nombre_prestador and borrado=1))
+		RAISERROR('No existe un prestador con el id indicado para reactivar',5,5,'')
+	else
 	begin
 			update comercial.Prestador
-			set borrado = @estado
-			where nombre_prestador=ltrim(rtrim(@nombre_prestador))
+			set borrado = 0
+			where nombre_prestador=@nombre_prestador
 	end
-	else 
-		RAISERROR('ERROR MODIFICACION NO REALIZADA',5,5,'')
 end
 go
 
 
-
-create or alter procedure comercial.modificarPlan
+create or alter procedure comercial.reactivarPlan --reactiva un plan con borrado logico
 (
-    @nombre_plan varchar (40),
 	@id_plan int
 )
 as
 begin
+	
+	if(not exists(select 1 from comercial.Plan_Prestador where id_plan=@id_plan and borrado=1))
+		RAISERROR('No existe un plan con el id indicado para reactivar',5,5,'')
+	else
+	begin
+			update comercial.Plan_Prestador
+			set borrado = 0
+			where id_plan=@id_plan
+	end
+end
+go
 
-	update comercial.Plan_Prestador
-	set nombre_plan = @nombre_plan
-	where id_plan = @id_plan
-
+create or alter procedure comercial.modificarNombrePlan
+(
+    @nombre_plan varchar (50),
+	@id_plan int
+)
+as
+begin
+	set @nombre_plan =  ltrim(rtrim(@nombre_plan))
+	if(not exists (select 1 from comercial.Plan_Prestador where id_plan=@id_plan and borrado=0))
+		RAISERROR('No existe el plan indicado',5,5,'')
+		else 
+			if(@nombre_plan='' or @nombre_plan is null)
+				RAISERROR('Nombre no valido',5,5,'')
+			else
+				update comercial.Plan_Prestador
+				set nombre_plan = @nombre_plan
+				where id_plan = @id_plan
 end
 go
 
 
-create or alter procedure comercial.modificarCobertura
+create or alter procedure datos_paciente.modificarCobertura
 (   
 	@nombre_prestador varchar(50),
     @nombre_plan varchar(50),
@@ -764,20 +865,26 @@ as
 begin
 	declare @id_plan int,
 			@id_prestador int,
-			@id_paciente int
-	set @id_plan= (select id_plan from comercial.Plan_Prestador where nombre_plan=@nombre_plan and  borrado=0)
+			@id_paciente int,
+			@error varchar(100)
+	set @error = ' '
 	set @id_prestador = (select id_prestador from comercial.Prestador  where nombre_prestador=@nombre_prestador and borrado=0)
-	set @id_paciente= (select id_historia_clinica from datos_paciente.Paciente where nro_documento = @nro_documento)
-	
-	if(@id_plan is not null and @id_prestador is not null)
+	set @id_paciente= (select id_historia_clinica from datos_paciente.Paciente where nro_documento = @nro_documento and borrado=0)
+	set @id_plan= (select id_plan from comercial.Plan_Prestador where nombre_plan=@nombre_plan 
+																and  id_prestador=@id_prestador and  borrado=0)
+	if(@id_prestador is null)
+		set @error = @error + '| nombre de prestador no valido |'
+	if(@id_plan is null)
+		set @error = @error + '| nombre de plan no valido |'
+	if(@id_paciente is null)
+		set @error = @error + '| nro documento no valido |'
 	begin
 		update datos_paciente.Cobertura
 		set id_plan = @id_plan,
 			id_prestador=@id_prestador
 		where id_paciente = @id_paciente
 	end
-	else 
-		RAISERROR('ERROR MODIFICACION NO REALIZADA',5,5,'')
+	
 end
 go
 
@@ -789,18 +896,17 @@ create or alter procedure servicio.modificarEstadoTurno
 )
 as
 begin
-
-	if(@nombre_estado = 'reservado' collate Modern_Spanish_CI_AS or
-		@nombre_estado = 'atendido' collate Modern_Spanish_CI_AS or
-		@nombre_estado = 'ausente' collate Modern_Spanish_CI_AS or
-		@nombre_estado = 'cancelado' collate Modern_Spanish_CI_AS)
-	begin
-		update servicio.Estado_turno
-		set nombre_estado = @nombre_estado
-		where id_estado = @id_estado
-	end
-	else 
-		RAISERROR('ERROR MODIFICACION NO REALIZADA',5,5,'')
+	if(not exists(select 1 from servicio.Estado_turno where id_estado=@id_estado))
+		RAISERROR('no existe el id',5,5,'')
+	else
+		begin
+		if(@nombre_estado in('reservado','atendido','ausente','cancelado'))
+			update servicio.Estado_turno
+			set nombre_estado = @nombre_estado
+			where id_estado = @id_estado
+		else 
+			RAISERROR('nombre de estado no valido',5,5,'')
+		end
 end
 go
 
@@ -989,24 +1095,36 @@ deben ser anulados todos los turnos de pacientes que se encuentren vinculados a 
 pasar a estado disponible.*/
 create or alter procedure comercial.eliminarPrestador   --utilizamos borrado logico 
 (   
-	@nombre_prestador int
+	@nombre_prestador varchar(50)
 )
 as
 begin
 	declare @id_prestador int,
 			@id_estado int
+	set @nombre_prestador = ltrim(rtrim(@nombre_prestador))
 	set @id_estado =(select id_estado from servicio.Estado_turno where nombre_estado='cancelado')
 	set @id_prestador = (select id_prestador 
 						from comercial.Prestador
 						where nombre_prestador=@nombre_prestador)
-	update comercial.Prestador
-	set borrado=1                  --borrado logico
-	where id_prestador=@id_prestador
 
-	update servicio.Reserva_de_turno_medico                        
-	set borrado=1,--borra los turnos asignados a ese prestador de forma logica y se pueden utilizar para otro paciente
-		id_estado_turno=@id_estado
-	where id_paciente in(select id_paciente from datos_paciente.Cobertura where id_prestador=@id_prestador)
+	if(@nombre_prestador is null or @nombre_prestador='')
+		RAISERROR('Error: nombre de prestador no valido',5,5,'')
+	else
+	begin
+		update comercial.Prestador      --borrado logico prestador
+		set borrado=1                 
+		where id_prestador=@id_prestador
+
+		update comercial.Plan_Prestador  --borrado logico de los planes que corresponden al prestador
+		set borrado=1
+		where id_prestador=@id_prestador
+		
+		update servicio.Reserva_de_turno_medico                        
+		set borrado=1,--borra los turnos asignados a ese prestador de forma logica y se pueden utilizar para otro paciente
+			id_estado_turno=@id_estado
+		where id_paciente in(select id_paciente from datos_paciente.Cobertura where id_prestador=@id_prestador)
+
+	end
 end
 go
 
@@ -1014,25 +1132,26 @@ go
 
 create or alter procedure comercial.eliminarPlan  --borrado logico
 (   
-	@nombre_plan varchar(50)
+	@id_plan int
 )
 as
 begin
-
-	declare @id_plan int,
-			@id_estado int
+	declare @id_estado int
 	set @id_estado =(select id_estado from servicio.Estado_turno where nombre_estado='cancelado')
-	set @id_plan = (select id_plan 
-						from comercial.Plan_Prestador
-						where nombre_plan =@nombre_plan )
-	update comercial.Plan_Prestador
-	set borrado=1                  --borrado logico
-	where id_plan=@id_plan
 
-	update servicio.Reserva_de_turno_medico                        
-	set borrado=1,--borra los turnos asignados a ese prestador de forma logica y se pueden utilizar para otro paciente
-		id_estado_turno=@id_estado
-	where id_paciente in(select id_paciente from datos_paciente.Cobertura where id_plan=@id_plan)
+	if(not exists(select 1 from comercial.Plan_Prestador where id_plan=@id_plan))
+		RAISERROR('| Error plan no valido |',5,5,'')
+	else
+	begin
+		update comercial.Plan_Prestador
+		set borrado=1                  --borrado logico
+		where id_plan=@id_plan
+
+		update servicio.Reserva_de_turno_medico                        
+		set borrado=1,--borra los turnos asignados a ese plan de forma logica y se pueden utilizar para otro paciente
+			id_estado_turno=@id_estado
+		where id_paciente in(select id_paciente from datos_paciente.Cobertura where id_plan=@id_plan)
+	end
 end
 go
 
@@ -1044,10 +1163,12 @@ create or alter procedure servicio.eliminarEstudio  --borrado logico
 )
 as
 begin
-
-	update servicio.Estudio
-	set borrado = 1
-	where id_estudio = @id_estudio
+	if(not exists(select 1 from servicio.Estudio where id_estudio=@id_estudio))
+		RAISERROR('No existe el turno',5,5,'')
+	else
+		update servicio.Estudio
+		set borrado = 1
+		where id_estudio = @id_estudio
 
 end
 go
@@ -1124,20 +1245,20 @@ end
 go
 
 
-
 create or alter procedure servicio.eliminarEstadoTurno
 (   
 	@id_estado int
 )
 as
 begin
+	if(not exists (select 1 from servicio.Estado_turno where id_estado=@id_estado))
+		RAISERROR('ERROR no existe el id de estado',5,5,'')
+	else
+		delete servicio.Reserva_de_turno_medico
+		where id_estado_turno = @id_estado
 
-	delete servicio.Reserva_de_turno_medico
-	where id_estado_turno = @id_estado
-
-	delete servicio.Estado_turno
-	where id_estado = @id_estado
-
+		delete servicio.Estado_turno
+		where id_estado = @id_estado
 end
 go
 create or alter proc servicio.eliminarDiasporsede(
@@ -1233,10 +1354,18 @@ create or alter procedure datos_paciente.eliminarCoberturaPaciente
 )
 as
 begin
-
-	delete datos_paciente.Cobertura
-	where id_paciente in(select id_historia_clinica from datos_paciente.Paciente where nro_documento=@nro_documento)
-
+	declare @id_paciente int,
+			@error varchar(100)
+	set @error = ' '
+	set @id_paciente= (select id_historia_clinica from datos_paciente.Paciente where nro_documento = @nro_documento and borrado=0)
+	
+	if(@id_paciente is null)
+		set @error = @error + '| nro de documento no valido |'
+	if(not exists (select 1 from datos_paciente.Cobertura where id_paciente=@id_paciente))
+		set @error = @error + '| el paciente no tiene cobertura |'
+	if(@error = ' ')
+		delete datos_paciente.Cobertura
+		where id_paciente=@id_paciente
 end
 go
 
