@@ -149,6 +149,7 @@ exec servicio.insertarEstadoTurno 'cancelado'
 go
 exec servicio.insertarEstadoTurno 'cancelado' --no inserta duplicados
 go
+
 --insertartipodeturno
 
 exec servicio.insertarTipoTurno 'virtual'
@@ -162,8 +163,12 @@ exec personal.insertarEspecialidad 'OBSTETRICIA'
 go
 exec personal.insertarEspecialidad 'OBSTETRICIA'  --no inserta duplicados
 go
+--eliminarespecialidad
 exec personal.eliminarEspecialidad 'OBSTETRICIA'  -- borrado logico
 go
+exec personal.eliminarEspecialidad 'nnn'-- indica error en especialidad que no existe
+go
+--vuelvo a dar de alta
 exec personal.insertarEspecialidad 'OBSTETRICIA'  --como tiene borrado logico la actualiza a activo
 go
 exec personal.insertarEspecialidad 'TRAUMATO'
@@ -174,8 +179,9 @@ exec personal.insertarMedico 'alberto','gonzalez', 'OBSTETRICIA', 43256 --nombre
 go
 exec personal.insertarMedico 'alberto','gonzalez', 'OBSTETRICIA', 43256    -- no permite insertar dos veces la misma matricula de medico 
 go
-exec personal.insertarMedico 'alberto','gonzalez', 'FONO', 1111    -- la especialidad no existe
+exec personal.insertarMedico 'alberto','gonzalez', 'FONO', 1111    -- la especialidad no existe, la agrega y agrega la relacion
 go
+
 --eliminarmedico
 exec personal.eliminarMedico 43256 --borrado logico de medico y de todo sus turnos
 go
@@ -183,21 +189,36 @@ go
 exec personal.insertarMedico 'alberto','gonzalez', 'OBSTETRICIA', 43256  
 go
 
+--modificarMedico
+exec personal.modificarMedico 43256,'juan','nosequiensoy'
+go
+--no inserta nombres ni apellidos vacios, ni matriculas que no existan
+exec personal.modificarMedico 436,'',''  
+go
 
 --insertarSede
 exec servicio.insertarSede 'Trinidad de Ramos Mejia', 'juan de araoz', 'Ramos Mejia', 'Bs As'  --nombre_sede,direccion_sede, localidad_sede,provincia_sede
 go
 exec servicio.insertarSede 'Trinidad de Ramos Mejia', 'juan de araoz', 'Ramos Mejia', 'Bs As'  --no inserta sedes duplicadas
 go
---eliminacion logica
+exec servicio.insertarSede 'cruz celeste', '', '', 'Bs As'  --no inserta valores vacios o nulos
+go
+
+--eliminacion  logica sede
 exec servicio.eliminarSede 'Trinidad de Ramos Mejia'
 go
---vuelvo a dar de alta
+--vuelvo a dar de alta la sede
 exec servicio.insertarSede 'Trinidad de Ramos Mejia', 'juan de araoz', 'Ramos Mejia', 'Bs As'  
 go
 
+--modificarDireccionSede
+exec servicio.modificarDireccionSede 'Trinidad de Ramos Mejia', 'pedro goyena', 'CABA', 'Bs As'
+go
+--no inserta campos vacios
+exec servicio.modificarDireccionSede 'Trinidad de Ramos Mejia', '', '', 'Bs As'
+go
 
---insertarDiasporsede    crea los dias que hay atencion en una sede en una especialidad
+--insertarDiasporsede    crea los dias que hay atencion de un medico en una sede
 exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia', 'obstetricia', 'martes', '15:00','18:00' -- nro_colegiado , sede,especialidad, dia  'lunes','marte','miercoles','jueves','viernes','sabado', horario_inicio,horario_fin
 go
 exec servicio.insertarDiasPorSede 43256, 'Trinidad de Ramos Mejia', 'obstetricia', 'viernes', '15:00','23:00' --fuera de rango horario
@@ -221,23 +242,29 @@ exec servicio.insertarDiasPorSede 119914, 'Olivos', 'MEDICINA FAMILIAR', 'vierne
 go
 
 --eliminar dias por sede 
-exec servicio.eliminarDiasporsede 43256,'Trinidad de Ramos Mejia','obstetricia','martes'  --elimina la atencion de un medico en una sede en una especialidad en un dia 
-
+exec servicio.eliminarDiasporsede 43256,'Trinidad de Ramos Mejia','obstetricia','martes'  --elimina la atencion de un medico en una sede en un dia 
+go
 --insertar reserva turno
 
 exec servicio.insertarReservaTurno '25/07/2024','18:15',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
-go				
+go	
+--no permite duplicados
 exec servicio.insertarReservaTurno '25/07/2024','18:15',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
-go	 --no permite duplicados
+go
+--no permite turnos cada menos de 15 minutos
 exec servicio.insertarReservaTurno '25/07/2024','18:20',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
-go --no permite turnos cada menos de 15 minutos
+go 
+--no permite turnos fuera de horario
 exec servicio.insertarReservaTurno '25/07/2024','22:00',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
-go --no permite turnos fuera de horario
-
+go 
 exec servicio.insertarReservaTurno '25/07/2024','18:15',43256,'obstetricia','Trinidad de Ramos Mejia','presencial',33333333 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
 go
 
---creamos algunos turnos mas....
+--modificarHorarioReserva
+exec servicio.modificarReservaFechaHoraTurno 33333333,'25/07/2024','18:15','25/07/2024','18:45'
+go
+
+--creamos algunos turnos mas....(tienen que estar importados los archivos csv)
 exec servicio.insertarReservaTurno '05/08/2024','10:00',119957,'traumatologia','Barrio Norte','presencial',25111004 --fecha, hora, nrocolegiado med ,especialidad,sede, tipo_turno,dni paciente 
 go	
 exec servicio.insertarReservaTurno '05/08/2024','11:00',119957,'traumatologia','Barrio Norte','presencial',25111009

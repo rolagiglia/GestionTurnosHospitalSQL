@@ -134,14 +134,14 @@ go
 create table personal.Especialidad(
 	id_especialidad int primary key identity(1,1),
     nombre_especialidad varchar(30) not null UNIQUE check(nombre_especialidad<>''),
-	borrado bit default 0
+	borrado bit default 0  --borrado logico
 );
 go
 
 create table personal.Medico(
 	id_medico int primary key identity(1,1),
     nombre_medico varchar(50),
-    apellido_medico varchar(50)not null check(apellido_medico<>''),
+    apellido_medico varchar(50)not null check(rtrim(ltrim(apellido_medico))<>''),
 	nro_colegiado int not null UNIQUE,
 	borrado bit default 0, --borrado logico
 );
@@ -150,10 +150,10 @@ go
 
 create table servicio.Sede(
 	id_sede int primary key identity(1,1),
-    nombre_sede varchar(40),
-    direccion_sede varchar(50),
-	localidad_sede varchar (30),
-	provincia_sede varchar (30),
+    nombre_sede varchar(40) NOT NULL check(rtrim(ltrim(nombre_sede))<>''),
+    direccion_sede varchar(50)NOT NULL check(rtrim(ltrim(direccion_sede))<>''),
+	localidad_sede varchar (30)NOT NULL check(rtrim(ltrim(localidad_sede))<>''),
+	provincia_sede varchar (30)NOT NULL check(rtrim(ltrim(provincia_sede))<>''),
 	borrado bit default 0   -- borrado logico por defecto 0, borrado en 1
 );
 go
@@ -165,7 +165,7 @@ create table servicio.Dias_por_sede(                 -- la voy a usar a la hora 
 	id_especialidad int,
     dia varchar(10) check(lower(rtrim(ltrim(dia))) in('lunes','martes','miercoles','jueves','viernes','sabado')),
     horario_inicio time(0) check(horario_inicio between '08:00' and '18:00'),
-	horario_fin time(0) check(horario_fin between '12:00' and '20:00'),
+	horario_fin time(0) check(horario_fin between '11:00' and '20:00'),
     constraint fk_dia_medico foreign key (id_medico) references personal.Medico(id_medico),
     constraint fk_dia_sede foreign key (id_sede) references servicio.Sede(id_sede),
 	constraint fk_dia_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad),
