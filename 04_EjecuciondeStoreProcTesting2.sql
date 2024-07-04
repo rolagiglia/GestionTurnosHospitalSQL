@@ -14,7 +14,7 @@ use Com5600G16
 go 
 
 --inserta dos nuevos paciente . 
-execute  datos_paciente.insertarPaciente 'carla', 'gonzalez','unapellido','07/08/1999','dni',42345678,'femenino','mujer','argentino','','juan@juan.com', 1232132,2222432222,'' ,'administracion'
+execute  datos_paciente.insertarPaciente 'carla', 'gonzalez','unapellido','07/08/1999','dni',42345678,'femenino','mujer','argentino','','juan@juan.com', 113213290,222243222,'' ,'administracion'
 go
 execute  datos_paciente.insertarPaciente 'juan', 'perez','apellidomaterno','07/12/1987','dni',33333333,'masculino','hombre','argentino','','juan@juan.com', 1154678900,22222222,'' ,'medico'
 go

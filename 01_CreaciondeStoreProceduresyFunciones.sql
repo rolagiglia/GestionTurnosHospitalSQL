@@ -12,7 +12,7 @@ use Com5600G16
 go
 --FUNCIONES--
 -- función para validar números de teléfono
-CREATE OR ALTER FUNCTION personal.ValidarNumeroTelefono(@numero VARCHAR(30))
+CREATE OR ALTER FUNCTION datos_paciente.ValidarNumeroTelefono(@numero VARCHAR(30))
 RETURNS BIT
 AS
 BEGIN
@@ -27,7 +27,7 @@ BEGIN
 END
 GO
 --funcion para validar mail
-CREATE OR ALTER FUNCTION personal.ValidarCorreoElectronico(@correo VARCHAR(250))
+CREATE OR ALTER FUNCTION datos_paciente.ValidarCorreoElectronico(@correo VARCHAR(250))
 RETURNS BIT
 AS
 BEGIN
@@ -68,9 +68,11 @@ create or alter procedure datos_paciente.insertarPaciente
 )
 as
 begin
-	declare @error varchar(150)
+	declare @error varchar(300)
 	set @error = ' '
 	
+	if(@Usuario_actualizacion is null or ltrim(rtrim(@Usuario_actualizacion))='')
+		set @error = '| nombre de usuario que actualiza | '
 
 	if(ltrim(rtrim(@Sexo_biologico)) <> 'masculino' and            
 		ltrim(rtrim(@Sexo_biologico)) <> 'femenino' )
@@ -83,19 +85,21 @@ begin
 		set @error = @error +'| apellido | '
 
 	--si se ingresa un telefono (no esta vacio y no es nulo) lo valida
-	if((ltrim(rtrim(@Tel_fijo))<>'' or @Tel_fijo is not null) and 
-		personal.ValidarNumeroTelefono(ltrim(rtrim(@Tel_fijo)))=0)
+	if(ltrim(rtrim(@Tel_fijo))<>'' and @Tel_fijo is not null and 
+		datos_paciente.ValidarNumeroTelefono(ltrim(rtrim(@Tel_fijo)))=0)
 		set @error = @error +'| telefono fijo | '
 
-	if((ltrim(rtrim(@Tel_alternativo))<>'' or @Tel_alternativo is not null) or 
-		personal.ValidarNumeroTelefono(ltrim(rtrim(@Tel_alternativo)))=0)
+	if(ltrim(rtrim(@Tel_alternativo))<>'' and @Tel_alternativo is not null and 
+		datos_paciente.ValidarNumeroTelefono(ltrim(rtrim(@Tel_alternativo)))=0)
 		set @error = @error +'| telefono fijo | '
 
-	if((ltrim(rtrim(@Tel_laboral))<>'' or @Tel_laboral is not null) and 
-		personal.ValidarNumeroTelefono(ltrim(rtrim(@Tel_laboral)))=0)
+	if(ltrim(rtrim(@Tel_laboral))<>'' and @Tel_laboral is not null and 
+		datos_paciente.ValidarNumeroTelefono(ltrim(rtrim(@Tel_laboral)))=0)
 		set @error = @error +'| telefono fijo | '
+	--fin tel
 
-	if(@Mail is not null and personal.ValidarCorreoElectronico(LTRIM(RTRIM(@Mail)))=0) --si ingresa un mail lo valida
+	--si ingresa un mail lo valida
+	if(@Mail is not null and ltrim(rtrim(@Mail))<>'' and datos_paciente.ValidarCorreoElectronico(LTRIM(RTRIM(@Mail)))=0) 
 		set @error = @error +'| mail | '
 
 	if(@NroDoc is null or @NroDoc<10000000 or @NroDoc>999999999)
@@ -103,14 +107,15 @@ begin
 
 	if(@Fecha_nacimiento is not null and @Fecha_nacimiento>(convert(date,getdate()))) --no inserta fecha mayor a la actual
 		set @error = @error + '| fecha |'
-
-	if(exists(select 1			-- verifica que el nro doc no se repita
-				from datos_paciente.Paciente
-				where nro_documento=@NroDoc))
-		set @error = @error + '| nro documento ya existe | '
-			
+				
 	if(@Tipo_documento not in('DNI','PAS'))
 		set @error = @error + '| tipo de documento | '	
+
+	if(exists(select 1 from datos_paciente.Paciente where nro_documento=@NroDoc and borrado=1)) --verifica que no haya un paciente inactivo
+		set @error = @error + '| existe un paciente inactivo con el dni ingresado |'
+	
+	if(exists(select 1	from datos_paciente.Paciente where nro_documento=@NroDoc and borrado=0))-- verifica que no haya un paciente activo				
+		set @error = @error + '| existe un paciente activo con el dni ingresado |'
 
 	if(@error = ' ')
 		insert into datos_paciente.Paciente (nombre, apellido, apellido_materno, fecha_nacimiento, tipo_documento,
@@ -133,13 +138,12 @@ begin
 				(ltrim(rtrim(@Tel_alternativo))),
 				(ltrim(rtrim(@Tel_laboral))),
 				(ltrim(rtrim(@Usuario_actualizacion)))
-				)
-		else
-			begin
-				set @error = 'Valor/es ingresado/s no valido/s:  '+ @error
-				RAISERROR(@error,5,5,'')
-			end
-
+				)	
+	else
+		begin
+			set @error = 'Error:  '+ @error
+			RAISERROR(@error,5,5,'')
+		end
 end
 go
 
@@ -518,6 +522,9 @@ begin
 		if(@id_especialidad is null )        --no existe la especialidad o no esta activa 
 			exec personal.insertarEspecialidad @nombre_especialidad    --inserta la especialidad
 	
+	--busco el id de la nueva especialidad insertada
+	set @id_especialidad = (select id_especialidad from personal.Especialidad where nombre_especialidad=@nombre_especialidad)
+	
 	if(@error=' ')
 	begin
 		
@@ -822,7 +829,6 @@ create or alter procedure datos_paciente.modificarBorradoDePaciente   --reactiva
 )
 as
 begin
-		
 		if(exists(select 1		
 					from datos_paciente.Paciente
 					where nro_documento=@nro_documento and borrado=1))
@@ -831,6 +837,43 @@ begin
 			where nro_documento=@nro_documento
 		else
 			RAISERROR('NO EXISTE UN PACIENTE DADO DE BAJA CON EL DNI INGRESADO',5,5,'')
+end
+go
+
+create or alter proc datos_paciente.modificarNombreyApellido
+(
+	@nro_documento int,
+	@nombre varchar(50),
+	@apellido varchar(50),
+	@usuario_actualizacion varchar(50)
+)
+as
+begin
+	declare @error varchar(150)
+	set @error = ' '
+	if(@nro_documento is null)
+		set @error = @error + '| nro de documento |'
+	if(@nombre is null or ltrim(rtrim(@nombre))= '')
+		set @error = @error + '| nombre |'
+	if(ltrim(rtrim(@apellido))='' or @apellido  is null)
+		set @error = @error + '| apellido |'
+	if(@usuario_actualizacion is null or ltrim(rtrim(@usuario_actualizacion))= '')
+		set @error = @error + '| nombre de usuario |'
+	if(@error=' ' and not exists(select 1 from datos_paciente.Paciente 
+								where nro_documento=@nro_documento and borrado=0))
+		set @error = @error + '| no existe paciente activo |'
+	if(@error=' ')
+		update datos_paciente.Paciente
+		set nombre = @nombre,
+			apellido=@apellido,
+			usuario_actualizacion = @usuario_actualizacion,
+			fecha_actualizacion = convert(date,getdate())
+			where nro_documento = @nro_documento and borrado=0
+	else
+		begin
+		set @error = 'Error: ' + @error
+		RAISERROR(@error,5,5,'')
+		end
 end
 go
 
@@ -867,7 +910,39 @@ begin
 end
 go
 
-
+create or alter procedure datos_paciente.modificarDni
+(
+	@nro_documento int,
+    @nro_documento_nuevo int,
+	@usuario_actualizacion varchar(50)
+)
+as
+begin
+	declare @error varchar(150)
+	set @error = ' '
+	if(@nro_documento is null)
+		set @error = @error + '| nro de documento antiguo |'
+	if(@nro_documento_nuevo is null)
+		set @error = @error + '| nuevo nro de documento |'
+	if(ltrim(rtrim(@usuario_actualizacion))='' or @usuario_actualizacion is null)
+		set @error = @error + '| usuario |'
+	
+	if(@error=' ' and not exists(select 1 from datos_paciente.Paciente 
+								where nro_documento=@nro_documento and borrado=0))
+		set @error = @error + '| no existe paciente activo |'
+	if(@error=' ')
+		update datos_paciente.Paciente
+		set nro_documento = @nro_documento_nuevo,
+			usuario_actualizacion = @usuario_actualizacion,
+			fecha_actualizacion = convert(date,getdate())
+			where nro_documento = @nro_documento and borrado=0
+	else
+		begin
+		set @error = 'Error: ' + @error
+		RAISERROR(@error,5,5,'')
+		end
+end
+go
 
 create or alter procedure datos_paciente.modificarTelPaciente
 (
@@ -889,8 +964,9 @@ begin
 		set @error = '| tipo de telefono |'
 	if(@id_paciente is null)
 		set @error = '| nro documento paciente |'
-	if(@tel is null or ltrim(rtrim(@tel))='')
+	if(@tel is null or ltrim(rtrim(@tel))='' or datos_paciente.ValidarNumeroTelefono(ltrim(rtrim(@tel)))=0)
 		set @error = '| nro telefono |'
+
 	if(@error = ' ')
 	begin
 		if(@tipo = 'fijo')
@@ -1728,32 +1804,56 @@ begin
 	if(@error = ' ')
 		delete datos_paciente.Cobertura
 		where id_paciente=@id_paciente
+	else
+	begin
+		set @error = 'Error: ' + @error
+		RAISERROR(@error,5,5,'')
+	end
 end
 go
 
-create or alter proc servicio.autorizar_estudio(@estudio varchar(200),@plan varchar(50),@nro_documento int)
+create or alter proc servicio.autorizar_estudio(@estudio varchar(200), @plan varchar(50),@nro_documento int)
 as
 begin
-	declare @porcentaje_cobertura varchar(10)
-	declare @costo int
+	declare @porcentaje_cobertura varchar(10),
+			@costo int,
+			@error varchar(100)
+	
+	set @error = ' '
 
-	set @porcentaje_cobertura = (select [Porcentaje Cobertura]
-								from servicio.autorizacion_de_estudio
-								where estudio=@estudio and plan_=@plan)
+	if(@nro_documento is null or not exists(select 1 from datos_paciente.Paciente where nro_documento=@nro_documento and borrado=0))
+		set @error = @error + '| no existe paciente activo con el dni ingresado |'
 
-	set @costo = (select costo
-				from servicio.autorizacion_de_estudio
-				where estudio=@estudio and plan_=@plan)
-	if(@porcentaje_cobertura is not null)
-		update servicio.Estudio
-		set autorizado=@porcentaje_cobertura + ' %',
-			costo=@costo
-		where id_paciente in(select id_paciente from datos_paciente.Paciente where nro_documento=@nro_documento) and nombre_estudio=@estudio 
+	if(@estudio is null or ltrim(rtrim(@estudio))='')
+		set @error = @error + '| estudio |'		
+	
+	if(@plan is null or ltrim(rtrim(@plan))='')
+		set @error = @error + '| plan |'		
+
+	if(@error = ' ')
+	begin
+		set @porcentaje_cobertura = (select [Porcentaje Cobertura]
+									from servicio.autorizacion_de_estudio
+									where estudio=ltrim(rtrim(@estudio)) and plan_=ltrim(rtrim(@plan)))
+
+		set @costo = (select costo
+					from servicio.autorizacion_de_estudio
+					where estudio=ltrim(rtrim(@estudio)) and plan_=ltrim(rtrim(@plan)))
+		if(@porcentaje_cobertura is not null and @costo is not null)
+			update servicio.Estudio
+			set autorizado=@porcentaje_cobertura + ' %',
+				costo=@costo
+			where id_paciente in(select id_paciente from datos_paciente.Paciente where nro_documento=@nro_documento) and nombre_estudio=@estudio 
 		
+		else
+			update servicio.Estudio
+			set autorizado='no autoriza'
+			where id_paciente in(select id_paciente from datos_paciente.Paciente where nro_documento=@nro_documento)and nombre_estudio=@estudio
+	end
 	else
-		update servicio.Estudio
-		set autorizado='no autoriza'
-		where id_paciente in(select id_paciente from datos_paciente.Paciente where nro_documento=@nro_documento)and nombre_estudio=@estudio
+		begin
+		set @error = 'Error: ' + @error
+		RAISERROR(@error,5,5,'')
+	end
 end
 go
-

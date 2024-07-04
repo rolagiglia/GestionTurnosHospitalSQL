@@ -28,3 +28,20 @@ go
 exec importacion.importarParametrosAutorizacionEstudio N'C:\Dataset\Centro_Autorizaciones.Estudios clinicos.json'
 go
 
+ 
+
+/*
+VER TABLAS CON IMPORTADOS
+
+select * from datos_paciente.Paciente, datos_paciente.Domicilio where id_historia_clinica=id_paciente
+
+select * from personal.Medico m, personal.Especialidad e,personal.medico_especialidad me
+where m.id_medico=me.id_medico and e.id_especialidad=me.id_especialidad
+
+select * from comercial.Prestador p, comercial.Plan_Prestador pl where p.id_prestador=pl.id_prestador
+
+select * from servicio.Sede
+
+select * from servicio.autorizacion_de_estudio
+
+*/

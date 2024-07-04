@@ -19,13 +19,13 @@ create schema importacion
 go
 create table datos_paciente.Paciente (
 	id_historia_clinica int primary key identity(1,1),
-    nombre varchar(30) check(ltrim(rtrim(nombre))<>'' and ltrim(rtrim(nombre)) is not null),
-    apellido varchar(35) check(ltrim(rtrim(apellido))<>'' and ltrim(rtrim(apellido)) is not null),
+    nombre varchar(30) check(ltrim(rtrim(nombre))<>''),
+    apellido varchar(35) not null check(ltrim(rtrim(apellido))<>''),
     apellido_materno varchar(35),
     fecha_nacimiento date,
     tipo_documento varchar(10) check(tipo_documento in('DNI','PAS')),
     nro_documento int NOT NULL UNIQUE,
-    sexo_biologico varchar(10) check (lower(rtrim(ltrim(sexo_biologico))) in('masculino','femenino')),
+    sexo_biologico varchar(10) check (rtrim(ltrim(sexo_biologico)) in('masculino','femenino')),
     genero varchar(10),
     nacionalidad varchar(30),
     dir_foto_perfil varchar(100),
@@ -43,7 +43,7 @@ go
 
 CREATE table datos_paciente.Usuario (
 	id_usuario int PRIMARY KEY,  -- -- se deben generar a partir del dni
-    contrasenia varchar(20) NOT NULL check(and len(contrasenia)>8),--contrasenia mas de 8 caracteres
+    contrasenia varchar(20) NOT NULL check( len(contrasenia)>8),--contrasenia mas de 8 caracteres
     fecha_de_creacion date default(convert(date,getdate())),  -- fecha actual default
     id_paciente int,
     CONSTRAINT fk_paciente_usuario foreign key  (id_paciente) REFERENCES datos_paciente.Paciente(id_historia_clinica)  
@@ -57,7 +57,7 @@ CREATE table datos_paciente.Domicilio(
     piso int,
     departamento char(1), -- puede ser letra o numero
     cp smallint,
-    pais varchar(50) NOT NULL check(ltrim(rtrim(pais))<>''),
+    pais varchar(50) default 'Argentina',
     provincia varchar(50) NOT NULL check(ltrim(rtrim(provincia))<>''),
     localidad varchar(50) NOT NULL check(ltrim(rtrim(localidad))<>''),
     id_paciente int,
@@ -205,7 +205,7 @@ create table servicio.autorizacion_de_estudio (
 		costo decimal(10,2),
 		[Requiere autorizacion] bit
 )
-
+go
 create table personal.medico_especialidad(
 	id_medico int,
 	id_especialidad int,
@@ -213,3 +213,4 @@ create table personal.medico_especialidad(
 	constraint fk_especialidad_medico_especialidad foreign key (id_especialidad) references personal.Especialidad(id_especialidad),
 	constraint pk_medico_especialidad primary key(id_medico,id_especialidad)
 )
+go

@@ -65,19 +65,19 @@ begin
 	declare @sql nvarchar(max)
 
 	create table #PacientesTemporal (
-	Nombre varchar(30)collate SQL_Latin1_General_CP1_CI_AS,
-	Apellido varchar(35)collate SQL_Latin1_General_CP1_CI_AS,
-	Fecha_de_nacimiento varchar(10)collate SQL_Latin1_General_CP1_CI_AS,
-	tipo_Documento varchar(10)collate SQL_Latin1_General_CP1_CI_AS,
+	Nombre varchar(30),
+	Apellido varchar(35),
+	Fecha_de_nacimiento varchar(10),
+	tipo_Documento varchar(10),
 	Nro_documento int,
-	sexo varchar(10)collate SQL_Latin1_General_CP1_CI_AS,
-	genero varchar(10)collate SQL_Latin1_General_CP1_CI_AS,
-	Telefono_fijo varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
-	Nacionalidad varchar(50)collate SQL_Latin1_General_CP1_CI_AS,
-	Mail varchar(50)collate SQL_Latin1_General_CP1_CI_AS,
-	Calle_y_Nro varchar(50)collate SQL_Latin1_General_CP1_CI_AS,
-	localidad varchar(50)collate SQL_Latin1_General_CP1_CI_AS,
-	Provincia varchar(20)collate SQL_Latin1_General_CP1_CI_AS
+	sexo varchar(10),
+	genero varchar(10),
+	Telefono_fijo varchar(15),
+	Nacionalidad varchar(50),
+	Mail varchar(50),
+	Calle_y_Nro varchar(50),
+	localidad varchar(50),
+	Provincia varchar(20)
 )
 
 	set @sql = N'bulk insert #PacientesTemporal
@@ -93,21 +93,43 @@ begin
 
 	exec sp_executesql @sql
 
+	
+
+	--elimino los registros que tienen campos vacios y que no son admitidos en la tabla paciente	
+	delete from #PacientesTemporal
+	where   Nro_documento is null or
+			ltrim(rtrim(nombre))='' or ltrim(rtrim(nombre)) is null or
+			ltrim(rtrim(apellido))='' or ltrim(rtrim(apellido)) is null or
+			tipo_documento not in('DNI','PAS') or 
+			rtrim(ltrim(sexo)) not in('masculino','femenino')
 			
+	--pongo null si el telefono no pasa la validacion
+	update #PacientesTemporal
+	set Telefono_fijo = null
+	where datos_paciente.ValidarNumeroTelefono(ltrim(rtrim(Telefono_fijo)))=0 
+
+	--pongo null si el mail no pasa la validacion y valida la fecha
+	update #PacientesTemporal
+	set Mail = null,
+		Fecha_de_nacimiento = TRY_CONVERT(DATE, Fecha_de_nacimiento, 103)  -- si no lo puede convertir devuelve null, si no la fecha
+	where datos_paciente.ValidarCorreoElectronico(ltrim(rtrim(Mail)))=0
+
+	
+	--inserta los nuevos pacientes
 	insert into datos_paciente.Paciente(nombre,apellido,fecha_nacimiento,tipo_documento,
 										nro_documento,sexo_biologico,genero,tel_fijo,nacionalidad,
 										mail, usuario_actualizacion)
 		select Nombre, Apellido,CONVERT(date,Fecha_de_nacimiento, 103) ,tipo_Documento,
 				Nro_documento,lower(sexo),genero,Telefono_fijo,Nacionalidad,Mail, 'importacion'
 		from #PacientesTemporal
-		where Nro_documento not in (select nro_documento from datos_paciente.Paciente)   --no inserta los duplicados, el resto si
+		where not exists(select 1 from datos_paciente.Paciente where nro_documento=Nro_documento)   --no inserta los duplicados, el resto si
 
-
+		--inserto los domicilios
 		insert into datos_paciente.Domicilio(calle, numero,localidad,provincia,id_paciente)      
 			select  REPLACE(rtrim(ltrim (Calle_y_Nro)),importacion.ExtraerUltimosNumeros(Calle_y_Nro),''),  
 					cast(importacion.ExtraerUltimosNumeros(Calle_y_Nro)as int),localidad,provincia,p.id_historia_clinica  --utilizo funcion para obtener el nro de calle
 			from #PacientesTemporal t join datos_paciente.Paciente p on p.nro_documento=t.Nro_documento
-			where p.id_historia_clinica not in(select id_paciente from datos_paciente.Domicilio)                      --no inserta duplicados
+			where not exists(select 1 from datos_paciente.Domicilio where p.id_historia_clinica=id_paciente) --no inserta duplicados
 
 	drop table #PacientesTemporal
 
@@ -119,9 +141,9 @@ create or alter procedure importacion.importarMedicos(@path nvarchar(100)) as
 begin
 
 create table #MedicosTemporal (
-	Apellido varchar(35)collate SQL_Latin1_General_CP1_CI_AS,
-	Nombre varchar(30)collate SQL_Latin1_General_CP1_CI_AS,
-	Especialidad varchar(30)collate SQL_Latin1_General_CP1_CI_AS,
+	Apellido varchar(50),
+	Nombre varchar(50),
+	Especialidad varchar(50),
 	NumeroColegiado int
 )
 
@@ -139,14 +161,24 @@ create table #MedicosTemporal (
 
 	exec sp_executesql @sql
 
+
+	--elimino registros que no tengan apellido, NumeroColegiado y especialidad
+	delete from #MedicosTemporal
+	where apellido is null or ltrim(rtrim(apellido))='' or Especialidad is null or ltrim(rtrim(Especialidad))=''
+					or NumeroColegiado is null or NumeroColegiado<=0
+			
+
 	--elimino el dr, dra, kgo ... de la cadena, me quedo solo con el apellido
 	UPDATE #MedicosTemporal
 	SET Apellido = SUBSTRING(Apellido, CHARINDEX(' ', Apellido) + 1, LEN(Apellido) - CHARINDEX(' ', Apellido))
 	WHERE CHARINDEX(' ', Apellido) > 0;
 
+
 	UPDATE #MedicosTemporal
 	set Especialidad = upper(ltrim(rtrim(Especialidad)))
 	where Especialidad is not null and Especialidad<>''
+	
+
 
 	 --inserta especialidades que no existan
 	insert into personal.Especialidad (nombre_especialidad)          
@@ -158,18 +190,20 @@ create table #MedicosTemporal (
 	--si existen pero tienen borrado logico las activa
 	update personal.Especialidad									
 	set borrado=0
-	where nombre_especialidad in(select Especialidad from #MedicosTemporal where borrado=1 )
+	where exists(select 1 from #MedicosTemporal where Nombre=nombre_especialidad) and borrado=1 
 
 	--inserta los medicos que no existen
 	insert into personal.Medico(nombre_medico,apellido_medico,nro_colegiado)
-		select Nombre, Apellido, NumeroColegiado
+		select ltrim(rtrim(Nombre)), rtrim(ltrim(Apellido)), NumeroColegiado
 		from #MedicosTemporal
-		where NumeroColegiado not in (select nro_colegiado from personal.Medico)            
+		where not exists(select 1 from personal.Medico where nro_colegiado=NumeroColegiado)            
 
-	--si existen pero tienen borrado logico las activa
+	--si existen pero tienen borrado logico los activa y acualiza los datos
 	update personal.Medico
-	set borrado=0
-	where nro_colegiado in(select NumeroColegiado from #MedicosTemporal where borrado=1)
+	set borrado=0,
+		nombre_medico=ltrim(rtrim((select top 1 nombre from #MedicosTemporal where NumeroColegiado=nro_colegiado))),
+		apellido_medico=ltrim(rtrim((select top 1 apellido from #MedicosTemporal where NumeroColegiado=nro_colegiado)))
+	where exists(select 1 from #MedicosTemporal where NumeroColegiado=nro_colegiado) and borrado=1
 
 	--creo la relacion en tabla medico_especialidad
 	insert into personal.medico_especialidad
@@ -177,6 +211,8 @@ create table #MedicosTemporal (
 	select m.id_medico,e.id_especialidad 
 	from personal.Medico m inner join #MedicosTemporal t on m.nro_colegiado=t.NumeroColegiado 
 		inner join personal.Especialidad e on e.nombre_especialidad=t.Especialidad and m.borrado=0 and e.borrado=0
+	where not exists(select 1 from personal.medico_especialidad pme 
+						where pme.id_medico=m.id_medico and pme.id_especialidad=e.id_especialidad)
 
 	drop table #MedicosTemporal
 
@@ -189,10 +225,10 @@ begin
 	
 	create table #SedesTemporal
 	(
-		sede varchar(50) collate SQL_Latin1_General_CP1_CI_AS,
-		direccion varchar(50)collate SQL_Latin1_General_CP1_CI_AS,
-		localidad varchar(50)collate SQL_Latin1_General_CP1_CI_AS,
-		provincia varchar(20)collate SQL_Latin1_General_CP1_CI_AS
+		sede varchar(50) ,
+		direccion varchar(50),
+		localidad varchar(50),
+		provincia varchar(20)
 	)
 	declare @sql nvarchar(max)
 	set @sql=N'
@@ -206,22 +242,36 @@ begin
 		codepage = ''65001''
 	)'
 	exec sp_executesql @sql
-	
+
+	--elimino espacios en blanco
 	update #SedesTemporal
-	set sede = ltrim(rtrim(sede))
-	where sede is not null and sede<>''
+	set sede = ltrim(rtrim(sede)),
+		direccion = ltrim(rtrim(direccion)),
+		localidad = ltrim(rtrim(localidad)),
+		provincia = ltrim(rtrim(provincia))
+
+	--elimino los registros que estan vacios
+	delete from #SedesTemporal
+	where sede is null or sede='' or direccion is null or direccion='' or
+			localidad is null or localidad='' or provincia is null or provincia='';
+	
+	--elimino sedes repetidas
+	with eliminaDupli(dupli)
+	as(select ROW_NUMBER() over (partition by sede order by sede) 
+		from #SedesTemporal)
+	delete from eliminaDupli
+	where dupli>1
 
 	--si no existe la inserto
 	insert into servicio.Sede (nombre_sede,direccion_sede, localidad_sede, provincia_sede)
 		select sede,direccion,localidad,provincia
 		from #SedesTemporal
-		where not exists(select 1 from servicio.Sede where sede like nombre_sede)  
-		group by sede,direccion, localidad, provincia
+		where not exists(select 1 from servicio.Sede where sede=nombre_sede)  
 	
 	--si existe pero esta inactiva la activo
 	update servicio.Sede
 	set borrado=0
-	where nombre_sede in (select sede from #SedesTemporal) and borrado=1
+	where exists(select 1 from #SedesTemporal where sede=nombre_sede) and borrado=1
 
 end
 go
@@ -232,8 +282,8 @@ begin
 	
 	create table #PrestadorTemporal
 	(
-		prestador varchar(50)COLLATE SQL_Latin1_General_CP1_CI_AS ,
-		planes varchar(50)COLLATE SQL_Latin1_General_CP1_CI_AS
+		prestador varchar(50) ,
+		planes varchar(50)
 	)
 	declare @sql nvarchar(max)
 	set @sql = N'bulk insert #PrestadorTemporal
@@ -247,31 +297,36 @@ begin
 	)'
 
 	exec sp_executesql @sql
-
 	update #PrestadorTemporal
 	set planes = ltrim(rtrim(planes)),
 		prestador = ltrim(rtrim(prestador))
 
+	--elimino los que tienen campos vacios
+	delete from #PrestadorTemporal
+	where prestador is null or prestador=''
+	
+	--inserto prestadores que no existen
 	insert into comercial.Prestador(nombre_prestador)
-		select prestador 
-		from #PrestadorTemporal
-		where prestador not in (select nombre_prestador from comercial.Prestador) --- no inserte duplicados
+		select prestador  
+		from #PrestadorTemporal 
+		where not exists(select 1 from comercial.Prestador where nombre_prestador=prestador) --- no inserte duplicados
 		group by prestador
 	
+	--activa los que estan borrados
 	update comercial.Prestador
 	set borrado=0
-	where nombre_prestador in(select prestador 
-								from #PrestadorTemporal) and borrado=1
+	where exists(select 1 from #PrestadorTemporal where prestador=nombre_prestador) and borrado=1
 
-
+	--inserto en la tabla de planes los que no existen
 	insert into comercial.Plan_Prestador(id_prestador,nombre_plan)
 		select pres.id_prestador, temp.planes
 		from #PrestadorTemporal temp join comercial.Prestador pres on pres.nombre_prestador = temp.prestador  
-		where temp.planes not in (select nombre_plan from comercial.Plan_Prestador)         --no inserta duplicados
-
+		where not exists(select 1 from comercial.Plan_Prestador where nombre_plan=temp.planes) --no inserta duplicados
+	
+	--activa los que estan borrados
 	update comercial.Plan_Prestador
 	set borrado=0
-	where nombre_plan in(select planes from #PrestadorTemporal) and borrado=1
+	where exists(select 1 from #PrestadorTemporal where planes=nombre_plan) and borrado=1
 
 	drop table #PrestadorTemporal
 end
@@ -285,10 +340,10 @@ begin
 
 	create table #AutorizacionEstudiosTemp 
 	(
-		area nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		estudio nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		prestador nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
-		plan_ nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
+		area nvarchar(50),
+		estudio nvarchar(100) ,
+		prestador nvarchar(50),
+		plan_ nvarchar(100) ,
 		[Porcentaje Cobertura] int,
 		costo decimal(10,2),
 		[Requiere autorizacion] bit
@@ -430,9 +485,16 @@ begin
 	where area like ('%Âº%') or prestador like ('%Âº%') or
 			estudio like ('%Âº%') or plan_ like ('%Âº%')
 	
+	update #AutorizacionEstudiosTemp
+	set estudio = ltrim(rtrim(estudio)),
+		area = ltrim(rtrim(area)),
+		prestador = ltrim(rtrim(prestador)),
+		plan_ = ltrim(rtrim(plan_))
 	
 	delete from #AutorizacionEstudiosTemp   --elimino si hay algun null en la temporal
-	where estudio is null
+	where estudio is null or estudio='' or prestador is null or prestador='' or plan_ is null or plan_=''
+		or [Porcentaje Cobertura] is null or costo is null or [Requiere autorizacion] is null or area is null or
+		area=''
 
 
 	insert into servicio.autorizacion_de_estudio				--inserto en la base de datos
