@@ -8,13 +8,45 @@ ALUMNOS:
 	LA GIGLIA RODRIGO ARIEL DNI 33334248
 
 */
+use Com5600G16
+go
+--FUNCIONES--
+-- función para validar números de teléfono
+CREATE OR ALTER FUNCTION personal.ValidarNumeroTelefono(@numero VARCHAR(30))
+RETURNS BIT
+AS
+BEGIN
+    DECLARE @es_valido BIT
+    -- Usar PATINDEX para comprobar un patrón complejo del número de teléfono con guiones y parentesis, los elimina y verfica luego la longitus
+    IF PATINDEX('%[^0-9()\- ]%', @numero) = 0 
+       AND LEN(REPLACE(REPLACE(REPLACE(@numero, ' ', ''), '-', ''), '(', '')) BETWEEN 8 AND 14
+        SET @es_valido = 1
+    ELSE
+        SET @es_valido = 0
+    RETURN @es_valido
+END
+GO
+--funcion para validar mail
+CREATE OR ALTER FUNCTION personal.ValidarCorreoElectronico(@correo VARCHAR(250))
+RETURNS BIT
+AS
+BEGIN
+    DECLARE @es_valido BIT
+    -- Usar LIKE para comprobar el patrón del correo electrónico
+    IF @correo LIKE '%_@_%_.__%'
+        SET @es_valido = 1
+    ELSE
+        SET @es_valido = 0
+    RETURN @es_valido
+END
+GO
+
 
 -----STORED PROCEDURES------------
 -----INSERTS----------------------
 
 
-use Com5600G16
-go 
+ 
 create or alter procedure datos_paciente.insertarPaciente
 (
 	@Nombre varchar(30),
@@ -43,49 +75,65 @@ begin
 	if(ltrim(rtrim(@Sexo_biologico)) <> 'masculino' and            
 		ltrim(rtrim(@Sexo_biologico)) <> 'femenino' )
 		set @error = '| sexo biologico | '
-	else
-		if(ltrim(rtrim(@nombre))='' or ltrim(rtrim(@nombre)) is null)              
-			set @error = @error + '| nombre | ' 
-		
-		if(ltrim(rtrim(@apellido))='' or ltrim(rtrim(@apellido)) is null)               
-			set @error = @error +'| apellido | '
-		
-		if(@NroDoc is null or @NroDoc<10000000 or @NroDoc>999999999)
-			set @error = @error + '| nro documento | '
 
-		if(@Fecha_nacimiento is not null and @Fecha_nacimiento>(convert(date,getdate()))) --no inserta fecha mayor a la actual
-			set @error = @error + '| fecha |'
+	if(ltrim(rtrim(@nombre))='' or ltrim(rtrim(@nombre)) is null)              
+		set @error = @error + '| nombre | ' 
+	
+	if(ltrim(rtrim(@apellido))='' or ltrim(rtrim(@apellido)) is null)               
+		set @error = @error +'| apellido | '
 
-		if(exists(select 1			-- verifica que el nro doc no se repita
-					from datos_paciente.Paciente
-					where nro_documento=@NroDoc))
-			set @error = @error + '| nro documento ya existe | '
+	--si se ingresa un telefono (no esta vacio y no es nulo) lo valida
+	if((ltrim(rtrim(@Tel_fijo))<>'' or @Tel_fijo is not null) and 
+		personal.ValidarNumeroTelefono(ltrim(rtrim(@Tel_fijo)))=0)
+		set @error = @error +'| telefono fijo | '
+
+	if((ltrim(rtrim(@Tel_alternativo))<>'' or @Tel_alternativo is not null) or 
+		personal.ValidarNumeroTelefono(ltrim(rtrim(@Tel_alternativo)))=0)
+		set @error = @error +'| telefono fijo | '
+
+	if((ltrim(rtrim(@Tel_laboral))<>'' or @Tel_laboral is not null) and 
+		personal.ValidarNumeroTelefono(ltrim(rtrim(@Tel_laboral)))=0)
+		set @error = @error +'| telefono fijo | '
+
+	if(@Mail is not null and personal.ValidarCorreoElectronico(LTRIM(RTRIM(@Mail)))=0) --si ingresa un mail lo valida
+		set @error = @error +'| mail | '
+
+	if(@NroDoc is null or @NroDoc<10000000 or @NroDoc>999999999)
+		set @error = @error + '| nro documento | '
+
+	if(@Fecha_nacimiento is not null and @Fecha_nacimiento>(convert(date,getdate()))) --no inserta fecha mayor a la actual
+		set @error = @error + '| fecha |'
+
+	if(exists(select 1			-- verifica que el nro doc no se repita
+				from datos_paciente.Paciente
+				where nro_documento=@NroDoc))
+		set @error = @error + '| nro documento ya existe | '
 			
-		if(@Tipo_documento not in('DNI','PAS'))
-			set @error = @error + '| tipo de documento | '	
+	if(@Tipo_documento not in('DNI','PAS'))
+		set @error = @error + '| tipo de documento | '	
 
-		if(@error = ' ')
-			insert into datos_paciente.Paciente (nombre, apellido, apellido_materno, fecha_nacimiento, tipo_documento,
-													nro_documento, sexo_biologico, genero, nacionalidad, dir_foto_perfil,
-													mail,tel_fijo,tel_alternativo,tel_laboral, usuario_actualizacion) 
-						values 
-						(
-						 (ltrim(rtrim(@Nombre))),
-						(ltrim(rtrim(@Apellido))),
-						(ltrim(rtrim(@Apellido_materno))),
-						@Fecha_nacimiento,
-						@Tipo_documento,
-						@NroDoc,
-						(ltrim(rtrim(@Sexo_biologico))),
-						(ltrim(rtrim(@Genero))),
-						(ltrim(rtrim(@Nacionalidad))),
-						(ltrim(rtrim(@Dir_foto_perfil))),
-						(ltrim(rtrim(@Mail))),
-						(ltrim(rtrim(@Tel_fijo))),
-						(ltrim(rtrim(@Tel_alternativo))),
-						(ltrim(rtrim(@Tel_laboral))),
-						(ltrim(rtrim(@Usuario_actualizacion)))
-						)
+	if(@error = ' ')
+		insert into datos_paciente.Paciente (nombre, apellido, apellido_materno, fecha_nacimiento, tipo_documento,
+												nro_documento, sexo_biologico, genero, nacionalidad, dir_foto_perfil,
+												mail,tel_fijo,tel_alternativo,tel_laboral, usuario_actualizacion) 
+			values 
+			(
+				(ltrim(rtrim(@Nombre))),
+				(ltrim(rtrim(@Apellido))),
+				(ltrim(rtrim(@Apellido_materno))),
+				@Fecha_nacimiento,
+				@Tipo_documento,
+				@NroDoc,
+				(ltrim(rtrim(@Sexo_biologico))),
+				(ltrim(rtrim(@Genero))),
+				(ltrim(rtrim(@Nacionalidad))),
+				(ltrim(rtrim(@Dir_foto_perfil))),
+				(ltrim(rtrim(@Mail))),
+				(ltrim(rtrim(@Tel_fijo))),
+				(ltrim(rtrim(@Tel_alternativo))),
+				(ltrim(rtrim(@Tel_laboral))),
+				(ltrim(rtrim(@Usuario_actualizacion)))
+				)
 		else
 			begin
 				set @error = 'Valor/es ingresado/s no valido/s:  '+ @error
@@ -94,6 +142,7 @@ begin
 
 end
 go
+
 
 
 create or alter procedure datos_paciente.insertarUsuario     --recibe la dni del paciente y una contrasenia
@@ -793,18 +842,28 @@ create or alter procedure datos_paciente.modificarFotoPaciente
 )
 as
 begin
-	
-	update datos_paciente.Paciente
-	set dir_foto_perfil = @dir_foto_perfil
-	where nro_documento = @nro_documento
-	
-	update datos_paciente.Paciente
-	set usuario_actualizacion = @usuario_actualizacion 
-	where nro_documento = @nro_documento
-
-	update datos_paciente.Paciente
-	set fecha_actualizacion = convert(date,getdate())
-	where nro_documento = @nro_documento
+	declare @error varchar(150)
+	set @error = ' '
+	if(@nro_documento is null)
+		set @error = @error + '| nro de documento |'
+	if(@dir_foto_perfil is null or ltrim(rtrim(@dir_foto_perfil))= '')
+		set @error = @error + '| direccion de foto |'
+	if(ltrim(rtrim(@usuario_actualizacion))='' or @usuario_actualizacion is null)
+		set @error = @error + '| usuario |'
+	if(@error=' ' and not exists(select 1 from datos_paciente.Paciente 
+								where nro_documento=@nro_documento and borrado=0))
+		set @error = @error + '| no existe paciente activo |'
+	if(@error=' ')
+		update datos_paciente.Paciente
+		set dir_foto_perfil = @dir_foto_perfil,
+			usuario_actualizacion = @usuario_actualizacion,
+			fecha_actualizacion = convert(date,getdate())
+			where nro_documento = @nro_documento and borrado=0
+	else
+		begin
+		set @error = 'Error: ' + @error
+		RAISERROR(@error,5,5,'')
+		end
 end
 go
 
@@ -819,34 +878,46 @@ create or alter procedure datos_paciente.modificarTelPaciente
 )
 as
 begin
-	
-	if(@tipo = 'fijo')
-	begin
-		update datos_paciente.Paciente
-		set tel_fijo = @tel
-		where nro_documento = @nro_documento
-	end
+	declare @error varchar(150),
+			@id_paciente int
+	set @error = ' '
+	set @id_paciente =(select id_historia_clinica from datos_paciente.Paciente where nro_documento=@nro_documento and borrado=0)
 
-	if(@tipo = 'alternativo')
+	if(@usuario_actualizacion is null or ltrim(rtrim(@usuario_actualizacion))='') 
+		set @error = '| usuario |'
+	if(ltrim(rtrim(@tipo))='' or @tipo is null or @tipo not in('fijo','alternativo','laboral'))
+		set @error = '| tipo de telefono |'
+	if(@id_paciente is null)
+		set @error = '| nro documento paciente |'
+	if(@tel is null or ltrim(rtrim(@tel))='')
+		set @error = '| nro telefono |'
+	if(@error = ' ')
 	begin
-		update datos_paciente.Paciente
-		set tel_alternativo = @tel
-		where nro_documento = @nro_documento
-	end
+		if(@tipo = 'fijo')
+			update datos_paciente.Paciente
+			set tel_fijo = @tel,
+				usuario_actualizacion = @usuario_actualizacion,
+				fecha_actualizacion = convert(date,getdate())
+			where id_historia_clinica=@id_paciente
 
-	if(@tipo = 'laboral')
-	begin
-		update datos_paciente.Paciente
-		set tel_laboral = @tel
-		where nro_documento = @nro_documento
+		if(@tipo = 'alternativo')
+			update datos_paciente.Paciente
+			set tel_alternativo = @tel,
+				usuario_actualizacion = @usuario_actualizacion,
+				fecha_actualizacion = convert(date,getdate())
+			where id_historia_clinica=@id_paciente
+		if(@tipo = 'laboral')
+			update datos_paciente.Paciente
+			set tel_laboral = @tel,
+				usuario_actualizacion = @usuario_actualizacion,
+				fecha_actualizacion = convert(date,getdate())
+			where id_historia_clinica=@id_paciente
 	end
-	update datos_paciente.Paciente
-	set usuario_actualizacion = @usuario_actualizacion 
-	where nro_documento = @nro_documento
-
-	update datos_paciente.Paciente
-	set fecha_actualizacion = convert(date,getdate())
-	where nro_documento = @nro_documento
+	else
+		begin
+		set @error = 'Error: ' + @error
+		RAISERROR(@error,5,5,'')
+		end
 end
 go
 
@@ -1246,20 +1317,36 @@ create or alter procedure servicio.modificarReservaEstadoTurno
 )
 as
 begin
-	declare @id_estado_turno int
-	declare @id_paciente int
+	declare @id_estado_turno int,
+			@id_paciente int,
+			@error varchar(150)
+		set @nombre_estado = ltrim(rtrim(@nombre_estado))
+		set @error=' ' 
 		set @id_paciente = (select id_historia_clinica 
 							from datos_paciente.Paciente
-							where nro_documento = @nro_documento)
+							where nro_documento = @nro_documento and borrado=0)
+	if(@id_paciente is null)
+		set @error = @error + '| paciente no existe |'
+	if(@fecha is null)
+		set @error = @error + '| fecha |'
+	if(@hora is null)
+		set @error = @error + '| hora |'
+	if(@error=' ' and not exists(select 1 from servicio.Reserva_de_turno_medico 
+								where fecha=@fecha and hora=@hora and id_paciente=@id_paciente and borrado=0))
+		set @error = @error + '| no existe el turno |'
+
 	set @id_estado_turno = (select id_estado from servicio.Estado_turno where nombre_estado=@nombre_estado)
-	update servicio.Reserva_de_turno_medico
-	set id_estado_turno = @id_estado_turno
-	where fecha=@fecha and hora=@hora and id_paciente=@id_paciente
-	if(@nombre_estado='cancelado')
+	if(@id_estado_turno is null)
+		set @error = @error + '| estado de turno |'
+	if(@error = ' ')
 	begin
-		update servicio.Reserva_de_turno_medico
-		set borrado=1
+		update servicio.Reserva_de_turno_medico    --actualiza el estado del turno
+		set id_estado_turno = @id_estado_turno
 		where fecha=@fecha and hora=@hora and id_paciente=@id_paciente
+		if(@nombre_estado='cancelado')           --si el nuevo estado del turno es cancelado hace un borrado logico
+			update servicio.Reserva_de_turno_medico
+			set borrado=1
+			where fecha=@fecha and hora=@hora and id_paciente=@id_paciente and borrado=0
 	end
 end
 go
