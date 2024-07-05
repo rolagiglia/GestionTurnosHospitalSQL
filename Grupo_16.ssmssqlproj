@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<SqlWorkbenchSqlProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="Grupo_16">
+  <Items>
+    <LogicalFolder Name="Conexiones" Type="2" Sorted="true">
+      <Items>
+        <ConnectionNode Name="DESKTOP-3244B54:DESKTOP-3244B54\Ivi">
+          <Created>2024-07-04T17:56:32.1998516-03:00</Created>
+          <Type>SQL</Type>
+          <Server>DESKTOP-3244B54</Server>
+          <UserName />
+          <Authentication>Autenticación de Windows</Authentication>
+          <InitialDB />
+          <LoginTimeout>30</LoginTimeout>
+          <ExecutionTimeout>0</ExecutionTimeout>
+          <ConnectionProtocol>NotSpecified</ConnectionProtocol>
+          <ApplicationName>Microsoft SQL Server Management Studio - Consulta</ApplicationName>
+        </ConnectionNode>
+      </Items>
+    </LogicalFolder>
+    <LogicalFolder Name="Consultas" Type="0" Sorted="true">
+      <Items>
+        <FileNode Name="00_DeCreaciondeTablas.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-3244B54:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>DESKTOP-3244B54</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>00_DeCreaciondeTablas.sql</FullPath>
+        </FileNode>
+        <FileNode Name="01_CreaciondeStoreProceduresyFunciones.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-3244B54:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>DESKTOP-3244B54</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>01_CreaciondeStoreProceduresyFunciones.sql</FullPath>
+        </FileNode>
+        <FileNode Name="02_CreacionDeSPImportaciondeArchivos.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-3244B54:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>DESKTOP-3244B54</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>02_CreacionDeSPImportaciondeArchivos.sql</FullPath>
+        </FileNode>
+        <FileNode Name="03_Ejecucion de SP de ImportacionTesting1.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-3244B54:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>DESKTOP-3244B54</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>03_Ejecucion de SP de ImportacionTesting1.sql</FullPath>
+        </FileNode>
+        <FileNode Name="04_EjecuciondeStoreProcTesting2.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-3244B54:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>DESKTOP-3244B54</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>04_EjecuciondeStoreProcTesting2.sql</FullPath>
+        </FileNode>
+        <FileNode Name="05_ExportarXMLInformeObraSocial.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-3244B54:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>DESKTOP-3244B54</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>05_ExportarXMLInformeObraSocial.sql</FullPath>
+        </FileNode>
+        <FileNode Name="06_EjecuciondeStoreProcInformeObraSocial.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-3244B54:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>DESKTOP-3244B54</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>06_EjecuciondeStoreProcInformeObraSocial.sql</FullPath>
+        </FileNode>
+      </Items>
+    </LogicalFolder>
+    <LogicalFolder Name="Varios" Type="3" Sorted="true">
+      <Items />
+    </LogicalFolder>
+  </Items>
+</SqlWorkbenchSqlProject>

@@ -1,7 +1,7 @@
 /* Script de testing DE STRORE PROC DE INSERCION MODIFICACION Y ELIMINACION DE DATOS
 
--- IMPORTANTE: En la ejecucion va a informar en consola los errores, ya que se prueban casos que son validados 
-	por constraint pero igualmente la ejecucion es completa!
+-- IMPORTANTE: En la ejecucion va a informar por consola los errores, ya que se prueban casos las diferentes 
+	validaciones	pero igualmente la ejecucion es completa!
 
 MATERIA BBDDA COMISION 5600 
 GRUPO NRO 16 

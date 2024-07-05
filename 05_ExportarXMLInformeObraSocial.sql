@@ -2,7 +2,7 @@
 los turnos atendidos para informar a la Obra Social. El mismo debe constar de los datos del
 paciente (Apellido, nombre, DNI), nombre y matrícula del profesional que lo atendió, fecha,
 hora, especialidad. Los parámetros de entrada son el nombre de la obra social y un intervalo
-de fechas.*/
+de fechas */
 use Com5600G16
 go 
 

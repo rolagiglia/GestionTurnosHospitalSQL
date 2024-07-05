@@ -8,8 +8,6 @@ ALUMNOS:
 	LA GIGLIA RODRIGO ARIEL DNI 33334248
 */
 
-
-
 use Com5600G16
 go
 
@@ -124,12 +122,12 @@ begin
 		from #PacientesTemporal
 		where not exists(select 1 from datos_paciente.Paciente where nro_documento=Nro_documento)   --no inserta los duplicados, el resto si
 
-		--inserto los domicilios
-		insert into datos_paciente.Domicilio(calle, numero,localidad,provincia,id_paciente)      
-			select  REPLACE(rtrim(ltrim (Calle_y_Nro)),importacion.ExtraerUltimosNumeros(Calle_y_Nro),''),  
+	--inserto los domicilios
+	insert into datos_paciente.Domicilio(calle, numero,localidad,provincia,id_paciente)      
+		select  REPLACE(rtrim(ltrim (Calle_y_Nro)),importacion.ExtraerUltimosNumeros(Calle_y_Nro),''),  
 					cast(importacion.ExtraerUltimosNumeros(Calle_y_Nro)as int),localidad,provincia,p.id_historia_clinica  --utilizo funcion para obtener el nro de calle
-			from #PacientesTemporal t join datos_paciente.Paciente p on p.nro_documento=t.Nro_documento
-			where not exists(select 1 from datos_paciente.Domicilio where p.id_historia_clinica=id_paciente) --no inserta duplicados
+		from #PacientesTemporal t join datos_paciente.Paciente p on p.nro_documento=t.Nro_documento
+		where not exists(select 1 from datos_paciente.Domicilio where p.id_historia_clinica=id_paciente) --no inserta duplicados
 
 	drop table #PacientesTemporal
 
