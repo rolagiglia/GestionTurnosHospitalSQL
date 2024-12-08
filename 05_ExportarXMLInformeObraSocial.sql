@@ -1,7 +1,7 @@
 /* CREACION DE STORE PROC PARA  generar un archivo XML detallando
-los turnos atendidos para informar a la Obra Social. El mismo debe constar de los datos del
-paciente (Apellido, nombre, DNI), nombre y matrÌcula del profesional que lo atendiÛ, fecha,
-hora, especialidad. Los par·metros de entrada son el nombre de la obra social y un intervalo
+los turnos atendidos para informar a la Obra Social. El mismo consta de los datos del
+paciente (Apellido, nombre, DNI), nombre y matr√≠cula del profesional que lo atendi√≥, fecha,
+hora, especialidad. Los par√°metros de entrada son el nombre de la obra social y un intervalo
 de fechas */
 use Com5600G16
 go 
