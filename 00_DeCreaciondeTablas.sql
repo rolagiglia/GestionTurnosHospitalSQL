@@ -1,10 +1,6 @@
 /* Script de creacion de DB y tablas 
 -se crean ademas los schemas datos_paciente, comercial, servicio, personal, importacion
 
-
-MATERIA BBDDA COMISION 5600 
-GRUPO NRO 16 
-ALUMNOS:
 	ARAGON, RODRIGO EZEQUIEL 43509985
 	LA GIGLIA RODRIGO ARIEL DNI 33334248
 */
