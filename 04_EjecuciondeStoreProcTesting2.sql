@@ -1,11 +1,7 @@
 /* Script de testing DE STRORE PROC DE INSERCION MODIFICACION Y ELIMINACION DE DATOS
 
--- IMPORTANTE: En la ejecucion va a informar por consola los errores, ya que se prueban casos las diferentes 
-	validaciones	pero igualmente la ejecucion es completa!
+-- IMPORTANTE: En la ejecucion va a informar por consola los errores ya que se prueban casos que especificamente los generan
 
-MATERIA BBDDA COMISION 5600 
-GRUPO NRO 16 
-ALUMNOS:
 	ARAGON, RODRIGO EZEQUIEL 43509985
 	LA GIGLIA RODRIGO ARIEL DNI 33334248
 */
