@@ -1,8 +1,6 @@
 /* Script de creacion de DB y tablas 
 -se crean ademas los schemas datos_paciente, comercial, servicio, personal, importacion
 
-	ARAGON, RODRIGO EZEQUIEL 43509985
-	LA GIGLIA RODRIGO ARIEL DNI 33334248
 */
 
 IF NOT EXISTS(SELECT 1 FROM sys.databases WHERE name = 'Com5600G16')
@@ -281,3 +279,4 @@ create table personal.medico_especialidad(
 else
 	RAISERROR('| Ya existe  personal.medico_especialidad |',5,5,'')
 go
+
