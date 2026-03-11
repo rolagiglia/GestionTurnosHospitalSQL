@@ -1,7 +1,5 @@
 /* Script CREACION DE SP de insercion, modificacion y eliminacion 
 
-	ARAGON, RODRIGO EZEQUIEL 43509985
-	LA GIGLIA RODRIGO ARIEL DNI 33334248
 */
 use Com5600G16
 go
@@ -1852,3 +1850,4 @@ begin
 	end
 end
 go
+
