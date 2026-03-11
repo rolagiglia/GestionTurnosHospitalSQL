@@ -2,8 +2,6 @@
 
 -- IMPORTANTE: En la ejecucion va a informar por consola los errores ya que se prueban casos que especificamente los generan
 
-	ARAGON, RODRIGO EZEQUIEL 43509985
-	LA GIGLIA RODRIGO ARIEL DNI 33334248
 */
 
 use Com5600G16
@@ -331,5 +329,6 @@ go
 
 exec datos_paciente.modificarTelPaciente 33333333,'09090909', 'fijo','usuario_admin' --dni, telefono,tipo de telefono, usuario que actualiza
 go
+
 
 
